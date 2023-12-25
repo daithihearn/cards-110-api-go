@@ -1,0 +1,10 @@
+.env
+
+build/
+
+.idea
+
+coverage*
+profile.out
+
+coverage-full.out

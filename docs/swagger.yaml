@@ -1,0 +1,127 @@
+basePath: /api/v1
+definitions:
+  api.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  user.UpdateProfileRequest:
+    properties:
+      forceUpdate:
+        type: boolean
+      name:
+        type: string
+      picture:
+        type: string
+    required:
+    - name
+    type: object
+  user.User:
+    properties:
+      lastAccess:
+        type: string
+      name:
+        type: string
+      picture:
+        type: string
+      pictureLocked:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: An API for playing the card game called 110. 110 is a game based on
+    the game 25 and is played primarily in Ireland
+  title: Cards 110 API
+  version: 8.0.0
+paths:
+  /profile:
+    get:
+      description: Returns the user's profile.
+      operationId: get-profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Profile
+    put:
+      consumes:
+      - application/json
+      description: Updates the user's profile or creates it if it doesn't exist.
+      operationId: update-profile
+      parameters:
+      - description: Profile
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Profile
+  /profile/has:
+    get:
+      description: Returns a boolean indicating if the user has a profile or not.
+      operationId: has-profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Profile
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
