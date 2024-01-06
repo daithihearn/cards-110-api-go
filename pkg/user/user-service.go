@@ -1,9 +1,11 @@
 package user
 
 import (
+	"cards-110-api/pkg/db"
 	"context"
-	"go.mongodb.org/mongo-driver/bson"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type ServiceI interface {
@@ -11,7 +13,7 @@ type ServiceI interface {
 	UpdateUser(ctx context.Context, id string, req UpdateProfileRequest) (User, error)
 }
 type Service struct {
-	Col CollectionI
+	Col db.Collection[User]
 }
 
 func (s *Service) GetUser(ctx context.Context, id string) (User, bool, error) {

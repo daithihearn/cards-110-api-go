@@ -1,10 +1,12 @@
 package deck
 
 import (
+	"cards-110-api/pkg/db"
 	"context"
 	"errors"
-	"go.mongodb.org/mongo-driver/bson"
 	"math/rand"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type ServiceI interface {
@@ -14,7 +16,7 @@ type ServiceI interface {
 	Get(ctx context.Context, gameId string) (Deck, bool, error)
 }
 type Service struct {
-	Col CollectionI
+	Col db.Collection[Deck]
 }
 
 // Shuffle the deck for a game.

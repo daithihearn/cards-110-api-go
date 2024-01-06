@@ -13,13 +13,14 @@ import (
 	"cards-110-api/pkg/db"
 	"cards-110-api/pkg/user"
 	"context"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -75,7 +76,7 @@ func main() {
 	//}
 
 	// Configure services
-	userColRec := user.Collection{Col: userCol}
+	userColRec := db.Collection[user.User]{Col: userCol}
 	userService := user.Service{Col: userColRec}
 	userHandler := user.Handler{S: &userService}
 	//deckColRec := deck.Collection{Col: deckCol}
@@ -107,9 +108,9 @@ func main() {
 	})
 
 	// Configure the routes
-	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{"read:game"}), userHandler.HasProfile)
-	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{"read:game"}), userHandler.GetProfile)
-	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{"read:game"}), userHandler.UpdateProfile)
+	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.HasProfile)
+	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.GetProfile)
+	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.UpdateProfile)
 
 	// Use the generated docs in the docs package.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
