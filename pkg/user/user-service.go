@@ -14,7 +14,7 @@ type Service struct {
 	Col CollectionI
 }
 
-func (s Service) GetUser(ctx context.Context, id string) (User, bool, error) {
+func (s *Service) GetUser(ctx context.Context, id string) (User, bool, error) {
 
 	filter := bson.M{
 		"_id": id,
@@ -29,7 +29,7 @@ func (s Service) GetUser(ctx context.Context, id string) (User, bool, error) {
 	return u, h, nil
 }
 
-func (s Service) UpdateUser(ctx context.Context, id string, req UpdateProfileRequest) (User, error) {
+func (s *Service) UpdateUser(ctx context.Context, id string, req UpdateProfileRequest) (User, error) {
 	filter := bson.M{
 		"_id": id,
 	}

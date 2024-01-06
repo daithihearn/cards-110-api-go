@@ -68,11 +68,18 @@ func main() {
 		cancel()
 		log.Fatal("Failed to get appUser collection: ", err)
 	}
+	//deckCol, err := db.GetCollection(ctx, dbName, "decks")
+	//if err != nil {
+	//	cancel()
+	//	log.Fatal("Failed to get deck collection: ", err)
+	//}
 
 	// Configure services
 	userColRec := user.Collection{Col: userCol}
 	userService := user.Service{Col: userColRec}
-	userHandler := user.Handler{S: userService}
+	userHandler := user.Handler{S: &userService}
+	//deckColRec := deck.Collection{Col: deckCol}
+	//deckService := deck.Service{Col: deckColRec}
 
 	// Set up the API routes.
 	router := gin.Default()
@@ -100,9 +107,9 @@ func main() {
 	})
 
 	// Configure the routes
-	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin(), userHandler.HasProfile)
-	router.GET("/api/v1/profile", auth.EnsureValidTokenGin(), userHandler.GetProfile)
-	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin(), userHandler.UpdateProfile)
+	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{"read:game"}), userHandler.HasProfile)
+	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{"read:game"}), userHandler.GetProfile)
+	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{"read:game"}), userHandler.UpdateProfile)
 
 	// Use the generated docs in the docs package.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))

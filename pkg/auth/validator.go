@@ -49,7 +49,7 @@ func (c CustomClaims) Validate(ctx context.Context) error {
 }
 
 // EnsureValidTokenGin is a Gin middleware that will check the validity of our JWT.
-func EnsureValidTokenGin() gin.HandlerFunc {
+func EnsureValidTokenGin(scopes []string) gin.HandlerFunc {
 	issuerURL, err := url.Parse("https://" + os.Getenv("AUTH0_DOMAIN") + "/")
 	if err != nil {
 		log.Fatalf("Failed to parse the issuer url: %v", err)
@@ -115,6 +115,15 @@ func EnsureValidTokenGin() gin.HandlerFunc {
 
 		// Check the token's claims are valid and set them into the Gin context
 		if claims, ok := token.Claims.(*CustomClaims); ok {
+
+			// Validate the scopes
+			err := validateScopes(claims, scopes)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+				return
+			}
+
+			// Check if the token has the required scopes
 			c.Set("user", claims)
 		} else {
 			// Handle the error - the claims are not of type *CustomClaims
@@ -124,6 +133,16 @@ func EnsureValidTokenGin() gin.HandlerFunc {
 		handler.ServeHTTP(rw, c.Request)
 
 	}
+}
+
+func validateScopes(claims *CustomClaims, scopes []string) error {
+	for _, scope := range scopes {
+		if !claims.HasScope(scope) {
+			return jwt.ValidationError{Inner: nil, Errors: jwt.ValidationErrorClaimsInvalid}
+		}
+	}
+
+	return nil
 }
 
 // newResponseWriter creates a new response writer to capture the status code

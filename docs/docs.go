@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "boolean"
+                            "$ref": "#/definitions/user.User"
                         }
                     },
                     "400": {

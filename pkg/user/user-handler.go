@@ -22,21 +22,11 @@ type Handler struct {
 // @Failure 500 {object} api.ErrorResponse
 // @Router /profile/has [get]
 func (h *Handler) HasProfile(c *gin.Context) {
-
-	// Extracting the token claims
-	user, exists := c.Get("user") // Use the key that your JWT middleware uses to store the user information
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token is missing or has not been validated"})
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
 		return
 	}
-	tokenClaims := user.(*auth.CustomClaims)
-
-	// Check if the token has the required scope
-	if !tokenClaims.HasScope("read:game") {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient scope."})
-	}
-
-	id := tokenClaims.RegisteredClaims.Subject
 
 	// Get the context from the request
 	ctx := c.Request.Context()
@@ -58,26 +48,17 @@ func (h *Handler) HasProfile(c *gin.Context) {
 // @ID get-profile
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} bool
+// @Success 200 {object} User
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 404 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /profile [get]
 func (h *Handler) GetProfile(c *gin.Context) {
-	// Extracting the token claims
-	user, exists := c.Get("user") // Use the key that your JWT middleware uses to store the user information
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token is missing or has not been validated"})
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
 		return
 	}
-	tokenClaims := user.(*auth.CustomClaims)
-
-	// Check if the token has the required scope
-	if !tokenClaims.HasScope("read:game") {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient scope."})
-	}
-
-	id := tokenClaims.RegisteredClaims.Subject
 
 	// Get the context from the request
 	ctx := c.Request.Context()
@@ -111,20 +92,11 @@ func (h *Handler) GetProfile(c *gin.Context) {
 // @Failure 500 {object} api.ErrorResponse
 // @Router /profile [put]
 func (h *Handler) UpdateProfile(c *gin.Context) {
-	// Extracting the token claims
-	user, exists := c.Get("user") // Use the key that your JWT middleware uses to store the user information
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token is missing or has not been validated"})
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
 		return
 	}
-	tokenClaims := user.(*auth.CustomClaims)
-
-	// Check if the token has the required scope
-	if !tokenClaims.HasScope("read:game") {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient scope."})
-	}
-
-	id := tokenClaims.RegisteredClaims.Subject
 
 	// Get the context from the request
 	ctx := c.Request.Context()
