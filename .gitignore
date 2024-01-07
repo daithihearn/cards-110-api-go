@@ -8,3 +8,5 @@ coverage*
 profile.out
 
 coverage-full.out
+
+.vscode

@@ -72,3 +72,50 @@ func (c *Collection[T]) FindOneAndUpdate(ctx context.Context, filter bson.M, upd
 
 	return t, nil
 }
+
+func (c *Collection[T]) FindOneAndReplace(ctx context.Context, filter bson.M, replacement T) (T, error) {
+	var t T
+	err := c.Col.FindOneAndReplace(ctx, filter, replacement, options.FindOneAndReplace().SetReturnDocument(options.After)).Decode(&t)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return t, nil
+		}
+		return t, err
+	}
+
+	return t, nil
+}
+
+func (c *Collection[T]) Upsert(ctx context.Context, t T, id string) error {
+
+	// Create filter
+	filter := bson.M{
+		"_id": id,
+	}
+
+	_, exists, err := c.FindOne(ctx, filter)
+
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		// Update the existing object
+		_, err := c.Col.UpdateOne(ctx, filter, bson.M{"$set": t})
+
+		if err != nil {
+			return err
+		}
+	} else {
+		// Insert a new object
+		_, err := c.Col.InsertOne(ctx, t)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+
+}

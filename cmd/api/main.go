@@ -11,6 +11,7 @@ import (
 	_ "cards-110-api/docs"
 	"cards-110-api/pkg/auth"
 	"cards-110-api/pkg/db"
+	"cards-110-api/pkg/settings"
 	"cards-110-api/pkg/user"
 	"context"
 	"log"
@@ -74,6 +75,11 @@ func main() {
 	//	cancel()
 	//	log.Fatal("Failed to get deck collection: ", err)
 	//}
+	settingsCol, err := db.GetCollection(ctx, dbName, "playerSettings")
+	if err != nil {
+		cancel()
+		log.Fatal("Failed to get playerSettings collection: ", err)
+	}
 
 	// Configure services
 	userColRec := db.Collection[user.User]{Col: userCol}
@@ -81,6 +87,9 @@ func main() {
 	userHandler := user.Handler{S: &userService}
 	//deckColRec := deck.Collection{Col: deckCol}
 	//deckService := deck.Service{Col: deckColRec}
+	settingsColRec := db.Collection[settings.Settings]{Col: settingsCol}
+	settingsService := settings.Service{Col: settingsColRec}
+	settingsHandler := settings.Handler{S: &settingsService}
 
 	// Set up the API routes.
 	router := gin.Default()
@@ -111,6 +120,8 @@ func main() {
 	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.HasProfile)
 	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.GetProfile)
 	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.UpdateProfile)
+	router.GET("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.GetSettings)
+	router.PUT("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.SaveSettings)
 
 	// Use the generated docs in the docs package.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))

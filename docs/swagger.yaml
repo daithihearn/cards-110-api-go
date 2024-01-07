@@ -5,6 +5,11 @@ definitions:
       message:
         type: string
     type: object
+  settings.Settings:
+    properties:
+      autoBuyCards:
+        type: boolean
+    type: object
   user.UpdateProfileRequest:
     properties:
       forceUpdate:
@@ -119,6 +124,68 @@ paths:
       - Bearer: []
       tags:
       - Profile
+  /settings:
+    get:
+      description: Returns the user's settings.
+      operationId: get-settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/settings.Settings'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: Saves the user's settings.
+      operationId: save-settings
+      parameters:
+      - description: Settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/settings.Settings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/settings.Settings'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Settings
 securityDefinitions:
   Bearer:
     in: header

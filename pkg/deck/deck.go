@@ -1,9 +1,5 @@
 package deck
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
 // Suit represents the suit of the card.
 type Suit string
 
@@ -85,6 +81,6 @@ var (
 
 // Deck represents the structure of the deck document in MongoDB.
 type Deck struct {
-	ID    primitive.ObjectID `bson:"_id,omitempty"` // The bson tag specifies the field name in MongoDB.
-	Cards []Card             `bson:"cards"`         // Cards are represented as a slice of Card.
+	ID    string `bson:"_id,omitempty"` // The bson tag specifies the field name in MongoDB.
+	Cards []Card `bson:"cards"`         // Cards are represented as a slice of Card.
 }

@@ -40,6 +40,8 @@ func (ds *Service) Shuffle(ctx context.Context, gameId string) error {
 		}
 	}
 
+	deck.Cards = deckCards
+
 	return ds.Save(ctx, deck)
 }
 
@@ -66,29 +68,11 @@ func (ds *Service) NextCard(ctx context.Context, gameId string) (Card, error) {
 }
 
 func (ds *Service) Save(ctx context.Context, deck Deck) error {
-	// Create filter
-	filter := bson.M{
-		"_id": deck.ID,
-	}
-
-	// Create update
-	update := bson.M{
-		"$set": bson.M{
-			"cards": deck.Cards,
-		},
-	}
-
-	_, err := ds.Col.FindOneAndUpdate(ctx, filter, update)
-
-	return err
+	return ds.Col.Upsert(ctx, deck, deck.ID)
 }
 
 func (ds *Service) Get(ctx context.Context, gameId string) (Deck, bool, error) {
-	filter := bson.M{
-		"_id": gameId,
-	}
-
-	return ds.Col.FindOne(ctx, filter)
+	return ds.Col.FindOne(ctx, bson.M{"_id": gameId})
 }
 
 func shuffleCards(cards []Card) []Card {
