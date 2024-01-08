@@ -1,8 +1,8 @@
-package user
+package profile
 
 import "time"
 
-type User struct {
+type Profile struct {
 	ID            string    `bson:"_id,omitempty" json:"-"`
 	Name          string    `bson:"name" json:"name"`
 	Picture       string    `bson:"picture" json:"picture"`

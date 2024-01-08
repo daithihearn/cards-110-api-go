@@ -27,7 +27,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.User"
+                            "$ref": "#/definitions/profile.Profile"
                         }
                     },
                     "400": {
@@ -74,7 +74,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UpdateProfileRequest"
+                            "$ref": "#/definitions/profile.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -82,7 +82,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.User"
+                            "$ref": "#/definitions/profile.Profile"
                         }
                     },
                     "400": {
@@ -251,15 +251,24 @@
                 }
             }
         },
-        "settings.Settings": {
+        "profile.Profile": {
             "type": "object",
             "properties": {
-                "autoBuyCards": {
+                "lastAccess": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "picture": {
+                    "type": "string"
+                },
+                "pictureLocked": {
                     "type": "boolean"
                 }
             }
         },
-        "user.UpdateProfileRequest": {
+        "profile.UpdateProfileRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -276,19 +285,10 @@
                 }
             }
         },
-        "user.User": {
+        "settings.Settings": {
             "type": "object",
             "properties": {
-                "lastAccess": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "picture": {
-                    "type": "string"
-                },
-                "pictureLocked": {
+                "autoBuyCards": {
                     "type": "boolean"
                 }
             }

@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.User"
+                            "$ref": "#/definitions/profile.Profile"
                         }
                     },
                     "400": {
@@ -81,7 +81,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.UpdateProfileRequest"
+                            "$ref": "#/definitions/profile.UpdateProfileRequest"
                         }
                     }
                 ],
@@ -89,7 +89,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.User"
+                            "$ref": "#/definitions/profile.Profile"
                         }
                     },
                     "400": {
@@ -258,15 +258,24 @@ const docTemplate = `{
                 }
             }
         },
-        "settings.Settings": {
+        "profile.Profile": {
             "type": "object",
             "properties": {
-                "autoBuyCards": {
+                "lastAccess": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "picture": {
+                    "type": "string"
+                },
+                "pictureLocked": {
                     "type": "boolean"
                 }
             }
         },
-        "user.UpdateProfileRequest": {
+        "profile.UpdateProfileRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -283,19 +292,10 @@ const docTemplate = `{
                 }
             }
         },
-        "user.User": {
+        "settings.Settings": {
             "type": "object",
             "properties": {
-                "lastAccess": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "picture": {
-                    "type": "string"
-                },
-                "pictureLocked": {
+                "autoBuyCards": {
                     "type": "boolean"
                 }
             }

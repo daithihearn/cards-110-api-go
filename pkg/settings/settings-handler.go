@@ -13,7 +13,7 @@ type Handler struct {
 	S ServiceI
 }
 
-// GetSettings @Summary Get the user's settings
+// Get @Summary Get the user's settings
 // @Description Returns the user's settings.
 // @Tags Settings
 // @ID get-settings
@@ -24,7 +24,7 @@ type Handler struct {
 // @Failure 404 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /settings [get]
-func (h *Handler) GetSettings(c *gin.Context) {
+func (h *Handler) Get(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {
@@ -52,7 +52,7 @@ func (h *Handler) GetSettings(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, settings)
 }
 
-// SaveSettings @Summary Save the user's settings
+// Save @Summary Save the user's settings
 // @Description Saves the user's settings.
 // @Tags Settings
 // @ID save-settings
@@ -65,7 +65,7 @@ func (h *Handler) GetSettings(c *gin.Context) {
 // @Failure 404 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /settings [put]
-func (h *Handler) SaveSettings(c *gin.Context) {
+func (h *Handler) Update(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {

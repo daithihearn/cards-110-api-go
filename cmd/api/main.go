@@ -11,8 +11,8 @@ import (
 	_ "cards-110-api/docs"
 	"cards-110-api/pkg/auth"
 	"cards-110-api/pkg/db"
+	"cards-110-api/pkg/profile"
 	"cards-110-api/pkg/settings"
-	"cards-110-api/pkg/user"
 	"context"
 	"log"
 	"os"
@@ -82,9 +82,9 @@ func main() {
 	}
 
 	// Configure services
-	userColRec := db.Collection[user.User]{Col: userCol}
-	userService := user.Service{Col: userColRec}
-	userHandler := user.Handler{S: &userService}
+	profileColRec := db.Collection[profile.Profile]{Col: userCol}
+	profileService := profile.Service{Col: profileColRec}
+	profileHandler := profile.Handler{S: &profileService}
 	//deckColRec := deck.Collection{Col: deckCol}
 	//deckService := deck.Service{Col: deckColRec}
 	settingsColRec := db.Collection[settings.Settings]{Col: settingsCol}
@@ -117,11 +117,11 @@ func main() {
 	})
 
 	// Configure the routes
-	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.HasProfile)
-	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.GetProfile)
-	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), userHandler.UpdateProfile)
-	router.GET("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.GetSettings)
-	router.PUT("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.SaveSettings)
+	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Has)
+	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Get)
+	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Update)
+	router.GET("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.Get)
+	router.PUT("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.Update)
 
 	// Use the generated docs in the docs package.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))

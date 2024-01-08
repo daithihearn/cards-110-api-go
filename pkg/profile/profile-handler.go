@@ -1,17 +1,18 @@
-package user
+package profile
 
 import (
 	"cards-110-api/pkg/api"
 	"cards-110-api/pkg/auth"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	S ServiceI
 }
 
-// HasProfile @Summary Check if user has profile
+// Has @Summary Check if user has profile
 // @Description Returns a boolean indicating if the user has a profile or not.
 // @Tags Profile
 // @ID has-profile
@@ -21,7 +22,7 @@ type Handler struct {
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /profile/has [get]
-func (h *Handler) HasProfile(c *gin.Context) {
+func (h *Handler) Has(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {
@@ -32,7 +33,7 @@ func (h *Handler) HasProfile(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Get the user from the database
-	_, has, err := h.S.GetUser(ctx, id)
+	_, has, err := h.S.Get(ctx, id)
 
 	if err != nil {
 		c.JSON(http.StatusOK, api.ErrorResponse{Message: err.Error()})
@@ -42,18 +43,18 @@ func (h *Handler) HasProfile(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, has)
 }
 
-// GetProfile @Summary Get the user's profile
+// Get @Summary Get the user's profile
 // @Description Returns the user's profile.
 // @Tags Profile
 // @ID get-profile
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} User
+// @Success 200 {object} Profile
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 404 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /profile [get]
-func (h *Handler) GetProfile(c *gin.Context) {
+func (h *Handler) Get(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {
@@ -64,7 +65,7 @@ func (h *Handler) GetProfile(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Get the user from the database
-	p, has, err := h.S.GetUser(ctx, id)
+	p, has, err := h.S.Get(ctx, id)
 
 	if err != nil {
 		c.JSON(http.StatusOK, api.ErrorResponse{Message: err.Error()})
@@ -78,7 +79,7 @@ func (h *Handler) GetProfile(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, p)
 }
 
-// UpdateProfile @Summary Update the user's profile
+// Update @Summary Update the user's profile
 // @Description Updates the user's profile or creates it if it doesn't exist.
 // @Tags Profile
 // @ID update-profile
@@ -86,12 +87,12 @@ func (h *Handler) GetProfile(c *gin.Context) {
 // @Accept json
 // @Param profile body UpdateProfileRequest true "Profile"
 // @Security Bearer
-// @Success 200 {object} User
+// @Success 200 {object} Profile
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 404 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /profile [put]
-func (h *Handler) UpdateProfile(c *gin.Context) {
+func (h *Handler) Update(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {
@@ -109,11 +110,24 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	}
 
 	// Update the profile
-	u, err := h.S.UpdateUser(ctx, id, req)
+	p, exists, err := h.S.Get(ctx, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	if !exists {
+		p = Profile{ID: id}
+	}
+	p.Name = req.Name
+	if req.ForceUpdate || !p.PictureLocked {
+		p.Picture = req.Picture
+	}
+
+	err = h.S.Save(ctx, p)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, u)
+	c.IndentedJSON(http.StatusOK, p)
 }
