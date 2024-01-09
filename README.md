@@ -1,4 +1,6 @@
 # Cards 110 API
+[![codecov](https://codecov.io/gh/daithihearn/cards-110-api-go/graph/badge.svg?token=OlyCq0RvGe)](https://codecov.io/gh/daithihearn/cards-110-api-go)
+
 The API layer for the [Cards 110 application](https://github.com/daithihearn/cards-110)
 
 # Requirements
