@@ -16,7 +16,7 @@ type ServiceI interface {
 	Get(ctx context.Context, gameId string) (Deck, bool, error)
 }
 type Service struct {
-	Col db.Collection[Deck]
+	Col db.CollectionI[Deck]
 }
 
 // Shuffle the deck for a game.
