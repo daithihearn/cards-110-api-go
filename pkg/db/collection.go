@@ -10,6 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type CollectionI[T any] interface {
+	FindOne(ctx context.Context, filter bson.M) (T, bool, error)
+	Find(ctx context.Context, filter bson.M) ([]T, error)
+	FindOneAndUpdate(ctx context.Context, filter bson.M, update bson.M) (T, error)
+	FindOneAndReplace(ctx context.Context, filter bson.M, replacement T) (T, error)
+	Upsert(ctx context.Context, t T, id string) error
+}
+
 type Collection[T any] struct {
 	Col *mongo.Collection
 }
