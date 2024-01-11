@@ -11,6 +11,7 @@ import (
 	_ "cards-110-api/docs"
 	"cards-110-api/pkg/auth"
 	"cards-110-api/pkg/db"
+	"cards-110-api/pkg/game"
 	"cards-110-api/pkg/profile"
 	"cards-110-api/pkg/settings"
 	"context"
@@ -70,26 +71,27 @@ func main() {
 		cancel()
 		log.Fatal("Failed to get appUser collection: ", err)
 	}
-	//deckCol, err := db.GetCollection(ctx, dbName, "decks")
-	//if err != nil {
-	//	cancel()
-	//	log.Fatal("Failed to get deck collection: ", err)
-	//}
 	settingsCol, err := db.GetCollection(ctx, dbName, "playerSettings")
 	if err != nil {
 		cancel()
 		log.Fatal("Failed to get playerSettings collection: ", err)
+	}
+	gameCol, err := db.GetCollection(ctx, dbName, "games")
+	if err != nil {
+		cancel()
+		log.Fatal("Failed to get games collection: ", err)
 	}
 
 	// Configure services
 	profileColRec := db.Collection[profile.Profile]{Col: userCol}
 	profileService := profile.Service{Col: profileColRec}
 	profileHandler := profile.Handler{S: &profileService}
-	//deckColRec := deck.Collection{Col: deckCol}
-	//deckService := deck.Service{Col: deckColRec}
 	settingsColRec := db.Collection[settings.Settings]{Col: settingsCol}
 	settingsService := settings.Service{Col: settingsColRec}
 	settingsHandler := settings.Handler{S: &settingsService}
+	gamesColRec := db.Collection[game.Game]{Col: gameCol}
+	gameService := game.Service{Col: &gamesColRec}
+	gameHandler := game.Handler{S: &gameService}
 
 	// Set up the API routes.
 	router := gin.Default()
@@ -106,7 +108,7 @@ func main() {
 	config := cors.Config{
 		AllowOrigins:  strings.Split(origins, ","),
 		AllowMethods:  []string{"GET", "POST", "PUT", "OPTIONS"},
-		AllowHeaders:  []string{"Origin", "Content-Length", "Content-Type"},
+		AllowHeaders:  []string{"Authorization", "Origin", "Content-Length", "Content-Type"},
 		ExposeHeaders: []string{"Content-Length"},
 	}
 	router.Use(cors.New(config))
@@ -117,11 +119,17 @@ func main() {
 	})
 
 	// Configure the routes
-	router.GET("/api/v1/profile/has", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Has)
 	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Get)
 	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Update)
+	router.GET("/api/v1/profile/all", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), profileHandler.GetAll)
 	router.GET("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.Get)
 	router.PUT("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.Update)
+	router.GET("/api/v1/game/:gameId", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.Get)
+	router.GET("/api/v1/game/:gameId/state", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetState)
+	router.GET("/api/v1/game/all", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetAll)
+	router.PUT("/api/v1/game", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Create)
+	router.GET("/api/v1/stats", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetStats)
+	router.GET("/api/v1/stats/:playerId", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), gameHandler.GetStatsForPlayer)
 
 	// Use the generated docs in the docs package.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))

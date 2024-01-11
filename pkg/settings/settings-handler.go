@@ -52,10 +52,10 @@ func (h *Handler) Get(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, settings)
 }
 
-// Save @Summary Save the user's settings
-// @Description Saves the user's settings.
+// Update @Summary Updates the user's settings
+// @Description Updates the user's settings.
 // @Tags Settings
-// @ID save-settings
+// @ID update-settings
 // @Accept json
 // @Produce json
 // @Security Bearer

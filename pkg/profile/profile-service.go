@@ -9,6 +9,7 @@ import (
 
 type ServiceI interface {
 	Get(ctx context.Context, id string) (Profile, bool, error)
+	GetAll(ctx context.Context) ([]Profile, error)
 	Save(ctx context.Context, p Profile) error
 }
 type Service struct {
@@ -17,6 +18,10 @@ type Service struct {
 
 func (s *Service) Get(ctx context.Context, id string) (Profile, bool, error) {
 	return s.Col.FindOne(ctx, bson.M{"_id": id})
+}
+
+func (s *Service) GetAll(ctx context.Context) ([]Profile, error) {
+	return s.Col.Find(ctx, bson.M{})
 }
 
 func (s *Service) Save(ctx context.Context, p Profile) error {

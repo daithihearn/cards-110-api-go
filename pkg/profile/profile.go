@@ -3,7 +3,7 @@ package profile
 import "time"
 
 type Profile struct {
-	ID            string    `bson:"_id,omitempty" json:"-"`
+	ID            string    `bson:"_id,omitempty" json:"id"`
 	Name          string    `bson:"name" json:"name"`
 	Picture       string    `bson:"picture" json:"picture"`
 	PictureLocked bool      `bson:"pictureLocked" json:"pictureLocked"`
