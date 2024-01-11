@@ -92,6 +92,8 @@ func main() {
 	gamesColRec := db.Collection[game.Game]{Col: gameCol}
 	gameService := game.Service{Col: &gamesColRec}
 	gameHandler := game.Handler{S: &gameService}
+	statsService := game.StatsService{Col: &gamesColRec}
+	statsHandler := game.StatsHandler{S: &statsService}
 
 	// Set up the API routes.
 	router := gin.Default()
@@ -128,8 +130,8 @@ func main() {
 	router.GET("/api/v1/game/:gameId/state", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetState)
 	router.GET("/api/v1/game/all", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetAll)
 	router.PUT("/api/v1/game", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Create)
-	router.GET("/api/v1/stats", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetStats)
-	router.GET("/api/v1/stats/:playerId", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), gameHandler.GetStatsForPlayer)
+	router.GET("/api/v1/stats", auth.EnsureValidTokenGin([]string{auth.ReadGame}), statsHandler.GetStats)
+	router.GET("/api/v1/stats/:playerId", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), statsHandler.GetStatsForPlayer)
 
 	// Use the generated docs in the docs package.
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
