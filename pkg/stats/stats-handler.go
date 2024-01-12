@@ -1,4 +1,4 @@
-package game
+package stats
 
 import (
 	"cards-110-api/pkg/api"
@@ -7,8 +7,8 @@ import (
 	"net/http"
 )
 
-type StatsHandler struct {
-	S StatsI
+type Handler struct {
+	S ServiceI
 }
 
 // GetStats @Summary Get the user's stats
@@ -21,7 +21,7 @@ type StatsHandler struct {
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /stats [get]
-func (h *StatsHandler) GetStats(c *gin.Context) {
+func (h *Handler) GetStats(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {
@@ -51,7 +51,7 @@ func (h *StatsHandler) GetStats(c *gin.Context) {
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /stats/{playerId} [get]
-func (h *StatsHandler) GetStatsForPlayer(c *gin.Context) {
+func (h *Handler) GetStatsForPlayer(c *gin.Context) {
 	// Check the user is correctly authenticated
 	_, ok := auth.CheckValidated(c)
 	if !ok {

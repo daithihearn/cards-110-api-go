@@ -14,6 +14,7 @@ import (
 	"cards-110-api/pkg/game"
 	"cards-110-api/pkg/profile"
 	"cards-110-api/pkg/settings"
+	"cards-110-api/pkg/stats"
 	"context"
 	"log"
 	"os"
@@ -92,8 +93,8 @@ func main() {
 	gamesColRec := db.Collection[game.Game]{Col: gameCol}
 	gameService := game.Service{Col: &gamesColRec}
 	gameHandler := game.Handler{S: &gameService}
-	statsService := game.StatsService{Col: &gamesColRec}
-	statsHandler := game.StatsHandler{S: &statsService}
+	statsService := stats.Service{Col: &gamesColRec}
+	statsHandler := stats.Handler{S: &statsService}
 
 	// Set up the API routes.
 	router := gin.Default()

@@ -1,6 +1,8 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 func ShuffleCards(cards []CardName) []CardName {
 	shuffled := make([]CardName, len(cards))

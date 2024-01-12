@@ -13,6 +13,7 @@ type MockCollection[T any] struct {
 	MockFindOneErr    *[]error
 	MockFindResult    *[][]T
 	MockFindErr       *[]error
+	MockUpsertErr     *[]error
 }
 
 func (m *MockCollection[T]) FindOne(ctx context.Context, filter bson.M) (T, bool, error) {
@@ -62,6 +63,19 @@ func (m *MockCollection[T]) Find(ctx context.Context, filter bson.M) ([]T, error
 	return result, err
 }
 
+func (m *MockCollection[T]) Upsert(ctx context.Context, t T, id string) error {
+	// Get the first element of the error array and remove it from the array, return nil if the array is empty
+	var err error
+	if len(*m.MockUpsertErr) > 0 {
+		err = (*m.MockUpsertErr)[0]
+		*m.MockUpsertErr = (*m.MockUpsertErr)[1:]
+	} else {
+		err = nil
+	}
+
+	return err
+}
+
 func (m *MockCollection[T]) FindOneAndUpdate(ctx context.Context, filter bson.M, update bson.M) (T, error) {
 	var result T
 	return result, nil
@@ -70,8 +84,4 @@ func (m *MockCollection[T]) FindOneAndUpdate(ctx context.Context, filter bson.M,
 func (m *MockCollection[T]) FindOneAndReplace(ctx context.Context, filter bson.M, replacement T) (T, error) {
 	var result T
 	return result, nil
-}
-
-func (m *MockCollection[T]) Upsert(ctx context.Context, t T, id string) error {
-	return nil
 }
