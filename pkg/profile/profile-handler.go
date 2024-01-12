@@ -12,43 +12,13 @@ type Handler struct {
 	S ServiceI
 }
 
-// Has @Summary Check if user has profile
-// @Description Returns a boolean indicating if the user has a profile or not.
-// @Tags Profile
-// @ID has-profile
-// @Produce  json
-// @Security Bearer
-// @Success 200 {object} bool
-// @Failure 400 {object} api.ErrorResponse
-// @Failure 500 {object} api.ErrorResponse
-// @Router /profile/has [get]
-func (h *Handler) Has(c *gin.Context) {
-	// Check the user is correctly authenticated
-	id, ok := auth.CheckValidated(c)
-	if !ok {
-		return
-	}
-
-	// Get the context from the request
-	ctx := c.Request.Context()
-
-	// Get the user from the database
-	_, has, err := h.S.Get(ctx, id)
-
-	if err != nil {
-		c.JSON(http.StatusOK, api.ErrorResponse{Message: err.Error()})
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, has)
-}
-
 // Get @Summary Get the user's profile
 // @Description Returns the user's profile.
 // @Tags Profile
 // @ID get-profile
 // @Produce json
 // @Security Bearer
+// @Param playerId query string false "Player ID"
 // @Success 200 {object} Profile
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 404 {object} api.ErrorResponse
@@ -56,9 +26,18 @@ func (h *Handler) Has(c *gin.Context) {
 // @Router /profile [get]
 func (h *Handler) Get(c *gin.Context) {
 	// Check the user is correctly authenticated
-	id, ok := auth.CheckValidated(c)
+	authID, ok := auth.CheckValidated(c)
 	if !ok {
 		return
+	}
+
+	// Retrieve the optional playerId parameter
+	playerId := c.Query("playerId")
+
+	// Use the provided playerId if it exists, otherwise use the authenticated user's ID
+	id := authID
+	if playerId != "" {
+		id = playerId
 	}
 
 	// Get the context from the request
@@ -130,4 +109,34 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, p)
+}
+
+// GetAll @Summary Get all profiles
+// @Description Returns all profiles.
+// @Tags Profile
+// @ID get-all-profiles
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} []Profile
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
+// @Router /profile/all [get]
+func (h *Handler) GetAll(c *gin.Context) {
+	// Check the user is correctly authenticated
+	_, ok := auth.CheckValidated(c)
+	if !ok {
+		return
+	}
+
+	// Get the context from the request
+	ctx := c.Request.Context()
+
+	// Get all profiles
+	profiles, err := h.S.GetAll(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, profiles)
 }

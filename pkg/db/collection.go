@@ -10,6 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type CollectionI[T any] interface {
+	FindOne(ctx context.Context, filter bson.M) (T, bool, error)
+	Find(ctx context.Context, filter bson.M) ([]T, error)
+	FindOneAndUpdate(ctx context.Context, filter bson.M, update bson.M) (T, error)
+	FindOneAndReplace(ctx context.Context, filter bson.M, replacement T) (T, error)
+	Upsert(ctx context.Context, t T, id string) error
+	Aggregate(ctx context.Context, pipeline interface{}) (*mongo.Cursor, error)
+}
+
 type Collection[T any] struct {
 	Col *mongo.Collection
 }
@@ -30,30 +39,30 @@ func (c *Collection[T]) FindOne(ctx context.Context, filter bson.M) (T, bool, er
 
 func (c *Collection[T]) Find(ctx context.Context, filter bson.M) ([]T, error) {
 	var ts []T
+
 	cur, err := c.Col.Find(ctx, filter)
 	if err != nil {
-		return []T{}, err
+		return nil, err
 	}
 
-	defer func(cur *mongo.Cursor, ctx context.Context) {
-		err := cur.Close(ctx)
-		if err != nil {
-			log.Fatal(err)
+	defer func() {
+		if cerr := cur.Close(ctx); cerr != nil {
+			log.Println("Failed to close cursor:", cerr)
 		}
-	}(cur, ctx)
+	}()
 
 	for cur.Next(ctx) {
 		var t T
-		err := cur.Decode(&t)
-		if err != nil {
+		if err := cur.Decode(&t); err != nil {
 			log.Println("Error decoding result:", err)
-			continue
+			// Decide here whether to continue or return an error
+			return nil, err
 		}
 		ts = append(ts, t)
 	}
 
 	if err := cur.Err(); err != nil {
-		return []T{}, err
+		return nil, err
 	}
 
 	return ts, nil
@@ -117,5 +126,8 @@ func (c *Collection[T]) Upsert(ctx context.Context, t T, id string) error {
 	}
 
 	return nil
+}
 
+func (c *Collection[T]) Aggregate(ctx context.Context, pipeline interface{}) (*mongo.Cursor, error) {
+	return c.Col.Aggregate(ctx, pipeline)
 }

@@ -5,6 +5,142 @@ definitions:
       message:
         type: string
     type: object
+  game.Card:
+    properties:
+      coldValue:
+        type: integer
+      renegable:
+        type: boolean
+      suit:
+        $ref: '#/definitions/game.Suit'
+      value:
+        type: integer
+    type: object
+  game.CreateGameRequest:
+    properties:
+      name:
+        type: string
+      playerIds:
+        items:
+          type: string
+        type: array
+    type: object
+  game.Game:
+    properties:
+      adminId:
+        type: string
+      completedRounds:
+        items:
+          $ref: '#/definitions/game.Round'
+        type: array
+      currentRound:
+        $ref: '#/definitions/game.Round'
+      id:
+        type: string
+      name:
+        type: string
+      players:
+        items:
+          $ref: '#/definitions/game.Player'
+        type: array
+      status:
+        $ref: '#/definitions/game.Status'
+      timeStamp:
+        type: string
+    type: object
+  game.Hand:
+    properties:
+      currentPlayerId:
+        type: string
+      leadOut:
+        $ref: '#/definitions/game.Card'
+      playedCards:
+        items:
+          $ref: '#/definitions/game.PlayedCard'
+        type: array
+      timeStamp:
+        type: string
+    type: object
+  game.PlayedCard:
+    properties:
+      card:
+        $ref: '#/definitions/game.Card'
+      playerId:
+        type: string
+    type: object
+  game.Player:
+    properties:
+      call:
+        type: integer
+      cardsBought:
+        type: integer
+      id:
+        type: string
+      rings:
+        type: integer
+      score:
+        type: integer
+      seatNumber:
+        type: integer
+      teamId:
+        type: string
+      winner:
+        type: boolean
+    type: object
+  game.PlayerStats:
+    properties:
+      gameId:
+        type: string
+      rings:
+        type: integer
+      score:
+        type: integer
+      timeStamp:
+        type: string
+      winner:
+        type: boolean
+    type: object
+  game.Round:
+    properties:
+      completedHands:
+        items:
+          $ref: '#/definitions/game.Hand'
+        type: array
+      currentHand:
+        $ref: '#/definitions/game.Hand'
+      dealerId:
+        type: string
+      dealerSeeingCall:
+        type: boolean
+      goerId:
+        type: string
+      number:
+        type: integer
+      status:
+        $ref: '#/definitions/game.RoundStatus'
+      suit:
+        $ref: '#/definitions/game.Suit'
+      timeStamp:
+        type: string
+    type: object
+  game.RoundStatus:
+    enum:
+    - 0
+    type: integer
+    x-enum-varnames:
+    - CALLING
+  game.Status:
+    enum:
+    - ACTIVE
+    type: string
+    x-enum-varnames:
+    - ACTIVE
+  game.Suit:
+    enum:
+    - EMPTY
+    type: string
+    x-enum-varnames:
+    - EMPTY
   profile.Profile:
     properties:
       lastAccess:
@@ -39,6 +175,119 @@ info:
   title: Cards 110 API
   version: 8.0.0
 paths:
+  /admin/game:
+    put:
+      consumes:
+      - application/json
+      description: Creates a new game with the given name and players
+      operationId: create-game
+      parameters:
+      - description: Game
+        in: body
+        name: game
+        required: true
+        schema:
+          $ref: '#/definitions/game.CreateGameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/game.Game'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Game
+  /admin/stats/gameStatsForPlayer:
+    get:
+      description: Returns stats for a player
+      operationId: get-stats-for-player
+      parameters:
+      - description: Player ID
+        in: path
+        name: playerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/game.PlayerStats'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      tags:
+      - Stats
+  /game/{gameId}:
+    get:
+      description: Returns a game with the given ID
+      operationId: get-game
+      parameters:
+      - description: Game ID
+        in: path
+        name: gameId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/game.Game'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Game
+  /game/all:
+    get:
+      description: Returns all games
+      operationId: get-all-games
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/game.Game'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Game
   /profile:
     get:
       description: Returns the user's profile.
@@ -154,8 +403,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Saves the user's settings.
-      operationId: save-settings
+      description: Updates the user's settings.
+      operationId: update-settings
       parameters:
       - description: Settings
         in: body
@@ -186,6 +435,29 @@ paths:
       - Bearer: []
       tags:
       - Settings
+  /stats/gameStatsForPlayer:
+    get:
+      description: Returns stats for the current user
+      operationId: get-stats
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/game.PlayerStats'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - Bearer: []
+      tags:
+      - Stats
 securityDefinitions:
   Bearer:
     in: header

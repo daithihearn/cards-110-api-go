@@ -8,6 +8,184 @@
     },
     "basePath": "/api/v1",
     "paths": {
+        "/admin/game": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Creates a new game with the given name and players",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "create-game",
+                "parameters": [
+                    {
+                        "description": "Game",
+                        "name": "game",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/game.CreateGameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.Game"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/stats/gameStatsForPlayer": {
+            "get": {
+                "description": "Returns stats for a player",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "operationId": "get-stats-for-player",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.PlayerStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/all": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns all games",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "get-all-games",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/game.Game"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/{gameId}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns a game with the given ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "get-game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.Game"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/profile": {
             "get": {
                 "security": [
@@ -191,7 +369,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "Saves the user's settings.",
+                "description": "Updates the user's settings.",
                 "consumes": [
                     "application/json"
                 ],
@@ -201,7 +379,7 @@
                 "tags": [
                     "Settings"
                 ],
-                "operationId": "save-settings",
+                "operationId": "update-settings",
                 "parameters": [
                     {
                         "description": "Settings",
@@ -240,6 +418,43 @@
                     }
                 }
             }
+        },
+        "/stats/gameStatsForPlayer": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns stats for the current user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "operationId": "get-stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.PlayerStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -250,6 +465,214 @@
                     "type": "string"
                 }
             }
+        },
+        "game.Card": {
+            "type": "object",
+            "properties": {
+                "coldValue": {
+                    "type": "integer"
+                },
+                "renegable": {
+                    "type": "boolean"
+                },
+                "suit": {
+                    "$ref": "#/definitions/game.Suit"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "game.CreateGameRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "playerIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "game.Game": {
+            "type": "object",
+            "properties": {
+                "adminId": {
+                    "type": "string"
+                },
+                "completedRounds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.Round"
+                    }
+                },
+                "currentRound": {
+                    "$ref": "#/definitions/game.Round"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "players": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.Player"
+                    }
+                },
+                "status": {
+                    "$ref": "#/definitions/game.Status"
+                },
+                "timeStamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "game.Hand": {
+            "type": "object",
+            "properties": {
+                "currentPlayerId": {
+                    "type": "string"
+                },
+                "leadOut": {
+                    "$ref": "#/definitions/game.Card"
+                },
+                "playedCards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.PlayedCard"
+                    }
+                },
+                "timeStamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "game.PlayedCard": {
+            "type": "object",
+            "properties": {
+                "card": {
+                    "$ref": "#/definitions/game.Card"
+                },
+                "playerId": {
+                    "type": "string"
+                }
+            }
+        },
+        "game.Player": {
+            "type": "object",
+            "properties": {
+                "call": {
+                    "type": "integer"
+                },
+                "cardsBought": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "rings": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "seatNumber": {
+                    "type": "integer"
+                },
+                "teamId": {
+                    "type": "string"
+                },
+                "winner": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "game.PlayerStats": {
+            "type": "object",
+            "properties": {
+                "gameId": {
+                    "type": "string"
+                },
+                "rings": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "timeStamp": {
+                    "type": "string"
+                },
+                "winner": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "game.Round": {
+            "type": "object",
+            "properties": {
+                "completedHands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.Hand"
+                    }
+                },
+                "currentHand": {
+                    "$ref": "#/definitions/game.Hand"
+                },
+                "dealerId": {
+                    "type": "string"
+                },
+                "dealerSeeingCall": {
+                    "type": "boolean"
+                },
+                "goerId": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/game.RoundStatus"
+                },
+                "suit": {
+                    "$ref": "#/definitions/game.Suit"
+                },
+                "timeStamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "game.RoundStatus": {
+            "type": "integer",
+            "enum": [
+                0
+            ],
+            "x-enum-varnames": [
+                "CALLING"
+            ]
+        },
+        "game.Status": {
+            "type": "string",
+            "enum": [
+                "ACTIVE"
+            ],
+            "x-enum-varnames": [
+                "ACTIVE"
+            ]
+        },
+        "game.Suit": {
+            "type": "string",
+            "enum": [
+                "EMPTY"
+            ],
+            "x-enum-varnames": [
+                "EMPTY"
+            ]
         },
         "profile.Profile": {
             "type": "object",
