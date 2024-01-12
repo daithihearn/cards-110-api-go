@@ -26,7 +26,7 @@ type Handler struct {
 // @Router /profile [get]
 func (h *Handler) Get(c *gin.Context) {
 	// Check the user is correctly authenticated
-	authID, ok := auth.CheckValidated(c)
+	id, ok := auth.CheckValidated(c)
 	if !ok {
 		return
 	}
@@ -35,7 +35,6 @@ func (h *Handler) Get(c *gin.Context) {
 	playerId := c.Query("playerId")
 
 	// Use the provided playerId if it exists, otherwise use the authenticated user's ID
-	id := authID
 	if playerId != "" {
 		id = playerId
 	}
