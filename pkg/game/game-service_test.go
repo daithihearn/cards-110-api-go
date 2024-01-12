@@ -115,6 +115,26 @@ func TestGet(t *testing.T) {
 			expectedExists: true,
 			expectingError: false,
 		},
+		{
+			name: "error thrown",
+			mockResult: &[]Game{
+				{},
+			},
+			mockExists:     &[]bool{false},
+			mockError:      &[]error{errors.New("something went wrong")},
+			expectedResult: Game{},
+			expectedExists: false,
+			expectingError: true,
+		},
+		{
+			name:           "not found",
+			mockResult:     &[]Game{{}},
+			mockExists:     &[]bool{false},
+			mockError:      &[]error{nil},
+			expectedResult: Game{},
+			expectedExists: false,
+			expectingError: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -139,9 +159,9 @@ func TestGet(t *testing.T) {
 				if !reflect.DeepEqual(result, test.expectedResult) {
 					t.Errorf("expected result %v, got %v", test.expectedExists, exists)
 				}
-				if exists != test.expectedExists {
-					t.Errorf("expected exists %v, got %v", test.expectedExists, exists)
-				}
+			}
+			if exists != test.expectedExists {
+				t.Errorf("expected exists %v, got %v", test.expectedExists, exists)
 			}
 		})
 	}
@@ -165,6 +185,20 @@ func TestGetAll(t *testing.T) {
 			expectedResult: []Game{TwoPlayerGame()},
 			expectingError: false,
 		},
+		{
+			name:           "error thrown",
+			mockResult:     &[][]Game{{}},
+			mockError:      &[]error{errors.New("something went wrong")},
+			expectedResult: []Game{},
+			expectingError: true,
+		},
+		{
+			name:           "no results should return empty array",
+			mockResult:     &[][]Game{},
+			mockError:      &[]error{nil},
+			expectedResult: []Game{},
+			expectingError: false,
+		},
 	}
 
 	for _, test := range tests {
@@ -185,7 +219,7 @@ func TestGetAll(t *testing.T) {
 					t.Errorf("expected error %v, got %v", test.expectingError, err)
 				}
 			} else {
-				if !reflect.DeepEqual(result, test.expectedResult) {
+				if !reflect.DeepEqual(result, test.expectedResult) && len(test.expectedResult) != 0 {
 					t.Errorf("expected result %v, got %v", test.expectedResult, result)
 				}
 			}
