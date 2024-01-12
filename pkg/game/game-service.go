@@ -3,6 +3,7 @@ package game
 import (
 	"cards-110-api/pkg/db"
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
 )
@@ -20,6 +21,15 @@ type Service struct {
 // Create a new game.
 func (s *Service) Create(ctx context.Context, playerIDs []string, name string, adminID string) (Game, error) {
 	log.Printf("Creating new game (%s)", name)
+
+	// Check for duplicate player IDs.
+	uniquePlayerIDs := make(map[string]bool)
+	for _, id := range playerIDs {
+		uniquePlayerIDs[id] = true
+	}
+	if len(uniquePlayerIDs) != len(playerIDs) {
+		return Game{}, errors.New("duplicate player IDs")
+	}
 
 	// Create a new game.
 	game, err := NewGame(playerIDs, name, adminID)
