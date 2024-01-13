@@ -226,3 +226,106 @@ func TestGetAll(t *testing.T) {
 		})
 	}
 }
+
+func TestCancel(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name            string
+		gameToCancel    string
+		mockGetResult   *[]Game
+		mockGetExists   *[]bool
+		mockGetError    *[]error
+		mockUpdateError *[]error
+		expectedResult  Game
+		expectingError  bool
+	}{
+		{
+			name:            "simple cancel",
+			gameToCancel:    TwoPlayerGame().ID,
+			mockGetResult:   &[]Game{TwoPlayerGame()},
+			mockGetExists:   &[]bool{true},
+			mockGetError:    &[]error{nil},
+			mockUpdateError: &[]error{nil},
+			expectedResult:  TwoPlayerGame(),
+			expectingError:  false,
+		},
+		{
+			name:         "error thrown",
+			gameToCancel: TwoPlayerGame().ID,
+			mockGetResult: &[]Game{
+				{},
+			},
+			mockGetExists:   &[]bool{false},
+			mockGetError:    &[]error{errors.New("something went wrong")},
+			mockUpdateError: &[]error{nil},
+			expectedResult:  Game{},
+			expectingError:  true,
+		},
+		{
+			name:           "not found",
+			gameToCancel:   TwoPlayerGame().ID,
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{nil},
+			expectedResult: Game{},
+			expectingError: true,
+		},
+		{
+			name:         "update error",
+			gameToCancel: TwoPlayerGame().ID,
+			mockGetResult: &[]Game{
+				TwoPlayerGame(),
+			},
+			mockGetExists:   &[]bool{true},
+			mockGetError:    &[]error{nil},
+			mockUpdateError: &[]error{errors.New("something went wrong")},
+			expectedResult:  Game{},
+			expectingError:  true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockCol := &db.MockCollection[Game]{
+				MockFindOneResult: test.mockGetResult,
+				MockFindOneExists: test.mockGetExists,
+				MockFindOneErr:    test.mockGetError,
+				MockUpdateOneErr:  test.mockUpdateError,
+			}
+
+			ds := &Service{
+				Col: mockCol,
+			}
+
+			result, err := ds.Cancel(ctx, test.gameToCancel)
+
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected error %v, got %v", test.expectingError, err)
+				}
+			} else {
+				if result.Status != CANCELLED {
+					t.Errorf("expected result %v, got %v", test.expectedResult, result)
+				}
+
+				// Check all fields are the same except status
+				if result.ID != test.expectedResult.ID {
+					t.Errorf("expected result %v, got %v", test.expectedResult, result)
+				}
+				if !reflect.DeepEqual(result.Players, test.expectedResult.Players) {
+					t.Errorf("expected result %v, got %v", test.expectedResult, result)
+				}
+				if !reflect.DeepEqual(result.CurrentRound, test.expectedResult.CurrentRound) {
+					t.Errorf("expected result %v, got %v", test.expectedResult, result)
+				}
+				if result.AdminID != test.expectedResult.AdminID {
+					t.Errorf("expected result %v, got %v", test.expectedResult, result)
+				}
+				if result.Name != test.expectedResult.Name {
+					t.Errorf("expected result %v, got %v", test.expectedResult, result)
+				}
+			}
+		})
+	}
+}

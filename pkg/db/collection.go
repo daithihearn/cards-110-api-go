@@ -15,6 +15,7 @@ type CollectionI[T any] interface {
 	Find(ctx context.Context, filter bson.M) ([]T, error)
 	FindOneAndUpdate(ctx context.Context, filter bson.M, update bson.M) (T, error)
 	FindOneAndReplace(ctx context.Context, filter bson.M, replacement T) (T, error)
+	UpdateOne(ctx context.Context, t T, id string) error
 	Upsert(ctx context.Context, t T, id string) error
 	Aggregate(ctx context.Context, pipeline interface{}) (*mongo.Cursor, error)
 }
@@ -94,6 +95,14 @@ func (c *Collection[T]) FindOneAndReplace(ctx context.Context, filter bson.M, re
 	}
 
 	return t, nil
+}
+
+func (c *Collection[T]) UpdateOne(ctx context.Context, t T, id string) error {
+	_, err := c.Col.UpdateOne(ctx, bson.M{
+		"_id": id,
+	}, bson.M{"$set": t})
+
+	return err
 }
 
 func (c *Collection[T]) Upsert(ctx context.Context, t T, id string) error {

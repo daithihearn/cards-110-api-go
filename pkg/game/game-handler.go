@@ -162,3 +162,38 @@ func (h *Handler) GetAll(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, games)
 }
+
+// Cancel @Summary Cancel a game
+// @Description Cancels a game with the given ID
+// @Tags Game
+// @ID cancel-game
+// @Produce json
+// @Security Bearer
+// @Param gameId path string true "Game ID"
+// @Success 200 {object} Game
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
+// @Router /game/{gameId} [delete]
+func (h *Handler) Cancel(c *gin.Context) {
+	// Check the user is correctly authenticated
+	_, ok := auth.CheckValidated(c)
+	if !ok {
+		return
+	}
+
+	// Get the context from the request
+	ctx := c.Request.Context()
+
+	// Get the game ID from the request
+	gameId := c.Param("gameId")
+
+	// Cancel the game
+	game, err := h.S.Cancel(ctx, gameId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, game)
+}
