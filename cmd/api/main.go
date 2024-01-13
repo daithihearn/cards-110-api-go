@@ -110,7 +110,7 @@ func main() {
 
 	config := cors.Config{
 		AllowOrigins:  strings.Split(origins, ","),
-		AllowMethods:  []string{"GET", "POST", "PUT", "OPTIONS"},
+		AllowMethods:  []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
 		AllowHeaders:  []string{"Authorization", "Origin", "Content-Length", "Content-Type"},
 		ExposeHeaders: []string{"Content-Length"},
 	}
@@ -131,6 +131,7 @@ func main() {
 	router.GET("/api/v1/game/:gameId/state", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetState)
 	router.GET("/api/v1/game/all", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetAll)
 	router.PUT("/api/v1/game", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Create)
+	router.DELETE("/api/v1/game/:gameId", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Cancel)
 	router.GET("/api/v1/stats", auth.EnsureValidTokenGin([]string{auth.ReadGame}), statsHandler.GetStats)
 	router.GET("/api/v1/stats/:playerId", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), statsHandler.GetStatsForPlayer)
 

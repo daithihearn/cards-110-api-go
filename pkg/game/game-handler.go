@@ -176,7 +176,7 @@ func (h *Handler) GetAll(c *gin.Context) {
 // @Router /game/{gameId} [delete]
 func (h *Handler) Cancel(c *gin.Context) {
 	// Check the user is correctly authenticated
-	_, ok := auth.CheckValidated(c)
+	id, ok := auth.CheckValidated(c)
 	if !ok {
 		return
 	}
@@ -188,7 +188,7 @@ func (h *Handler) Cancel(c *gin.Context) {
 	gameId := c.Param("gameId")
 
 	// Cancel the game
-	game, err := h.S.Cancel(ctx, gameId)
+	game, err := h.S.Cancel(ctx, gameId, id)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})

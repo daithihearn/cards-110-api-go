@@ -233,6 +233,7 @@ func TestCancel(t *testing.T) {
 	tests := []struct {
 		name            string
 		gameToCancel    string
+		adminID         string
 		mockGetResult   *[]Game
 		mockGetExists   *[]bool
 		mockGetError    *[]error
@@ -243,6 +244,7 @@ func TestCancel(t *testing.T) {
 		{
 			name:            "simple cancel",
 			gameToCancel:    TwoPlayerGame().ID,
+			adminID:         "1",
 			mockGetResult:   &[]Game{TwoPlayerGame()},
 			mockGetExists:   &[]bool{true},
 			mockGetError:    &[]error{nil},
@@ -253,6 +255,7 @@ func TestCancel(t *testing.T) {
 		{
 			name:         "error thrown",
 			gameToCancel: TwoPlayerGame().ID,
+			adminID:      "1",
 			mockGetResult: &[]Game{
 				{},
 			},
@@ -265,6 +268,7 @@ func TestCancel(t *testing.T) {
 		{
 			name:           "not found",
 			gameToCancel:   TwoPlayerGame().ID,
+			adminID:        "1",
 			mockGetResult:  &[]Game{{}},
 			mockGetExists:  &[]bool{false},
 			mockGetError:   &[]error{nil},
@@ -274,12 +278,26 @@ func TestCancel(t *testing.T) {
 		{
 			name:         "update error",
 			gameToCancel: TwoPlayerGame().ID,
+			adminID:      "1",
 			mockGetResult: &[]Game{
 				TwoPlayerGame(),
 			},
 			mockGetExists:   &[]bool{true},
 			mockGetError:    &[]error{nil},
 			mockUpdateError: &[]error{errors.New("something went wrong")},
+			expectedResult:  Game{},
+			expectingError:  true,
+		},
+		{
+			name:         "not admin",
+			gameToCancel: TwoPlayerGame().ID,
+			adminID:      "2",
+			mockGetResult: &[]Game{
+				TwoPlayerGame(),
+			},
+			mockGetExists:   &[]bool{true},
+			mockGetError:    &[]error{nil},
+			mockUpdateError: &[]error{nil},
 			expectedResult:  Game{},
 			expectingError:  true,
 		},
@@ -298,7 +316,7 @@ func TestCancel(t *testing.T) {
 				Col: mockCol,
 			}
 
-			result, err := ds.Cancel(ctx, test.gameToCancel)
+			result, err := ds.Cancel(ctx, test.gameToCancel, test.adminID)
 
 			if test.expectingError {
 				if err == nil {
