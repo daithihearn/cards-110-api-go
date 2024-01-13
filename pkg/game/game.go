@@ -149,6 +149,10 @@ func (g *Game) GetState(playerID string) (GameState, error) {
 	return gameState, nil
 }
 
+func (g *Game) Cancel() {
+	g.Status = CANCELLED
+}
+
 type PlayerStats struct {
 	GameID    string    `bson:"gameId" json:"gameId"`
 	Timestamp time.Time `bson:"timestamp" json:"timestamp"`

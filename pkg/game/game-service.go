@@ -12,6 +12,7 @@ type ServiceI interface {
 	Create(ctx context.Context, playerIDs []string, name string, adminID string) (Game, error)
 	Get(ctx context.Context, gameId string) (Game, bool, error)
 	GetAll(ctx context.Context) ([]Game, error)
+	Cancel(ctx context.Context, gameId string, adminId string) (Game, error)
 }
 
 type Service struct {
@@ -54,4 +55,31 @@ func (s *Service) Get(ctx context.Context, gameId string) (Game, bool, error) {
 // GetAll Get all games.
 func (s *Service) GetAll(ctx context.Context) ([]Game, error) {
 	return s.Col.Find(ctx, bson.M{})
+}
+
+// Cancel a game.
+func (s *Service) Cancel(ctx context.Context, gameId string, adminId string) (Game, error) {
+	// Get the game from the database.
+	game, has, err := s.Get(ctx, gameId)
+	if err != nil {
+		return Game{}, err
+	}
+	if !has {
+		return Game{}, errors.New("game not found")
+	}
+
+	// Check correct admin
+	if game.AdminID != adminId {
+		return Game{}, errors.New("not admin")
+	}
+
+	// Cancel the game.
+	game.Cancel()
+
+	// Save the game to the database.
+	err = s.Col.UpdateOne(ctx, game, game.ID)
+	if err != nil {
+		return Game{}, err
+	}
+	return game, nil
 }
