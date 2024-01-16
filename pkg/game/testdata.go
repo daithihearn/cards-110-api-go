@@ -70,7 +70,18 @@ func TwoPlayerGame() Game {
 	return Game{
 		ID:        "1",
 		Name:      "Test Game",
-		Status:    ACTIVE,
+		Status:    Active,
+		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Players:   []Player{Player1(), Player2()},
+		AdminID:   "1",
+	}
+}
+
+func CompletedGame() Game {
+	return Game{
+		ID:        "2",
+		Name:      "Test Game",
+		Status:    Completed,
 		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 		Players:   []Player{Player1(), Player2()},
 		AdminID:   "1",

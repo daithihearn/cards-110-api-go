@@ -124,14 +124,15 @@ func main() {
 	// Configure the routes
 	router.GET("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Get)
 	router.PUT("/api/v1/profile", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.Update)
-	router.GET("/api/v1/profile/all", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), profileHandler.GetAll)
+	router.GET("/api/v1/profile/all", auth.EnsureValidTokenGin([]string{auth.ReadGame}), profileHandler.GetAll)
 	router.GET("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.Get)
 	router.PUT("/api/v1/settings", auth.EnsureValidTokenGin([]string{auth.ReadGame}), settingsHandler.Update)
 	router.GET("/api/v1/game/:gameId", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.Get)
 	router.GET("/api/v1/game/:gameId/state", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetState)
+	router.PUT("/api/v1/game/:gameId/call", auth.EnsureValidTokenGin([]string{auth.WriteGame}), gameHandler.Call)
 	router.GET("/api/v1/game/all", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetAll)
 	router.PUT("/api/v1/game", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Create)
-	router.DELETE("/api/v1/game/:gameId", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Cancel)
+	router.DELETE("/api/v1/game/:gameId", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Delete)
 	router.GET("/api/v1/stats", auth.EnsureValidTokenGin([]string{auth.ReadGame}), statsHandler.GetStats)
 	router.GET("/api/v1/stats/:playerId", auth.EnsureValidTokenGin([]string{auth.ReadAdmin}), statsHandler.GetStatsForPlayer)
 

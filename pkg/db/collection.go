@@ -18,6 +18,7 @@ type CollectionI[T any] interface {
 	UpdateOne(ctx context.Context, t T, id string) error
 	Upsert(ctx context.Context, t T, id string) error
 	Aggregate(ctx context.Context, pipeline interface{}) (*mongo.Cursor, error)
+	DeleteOne(ctx context.Context, id string) error
 }
 
 type Collection[T any] struct {
@@ -139,4 +140,11 @@ func (c *Collection[T]) Upsert(ctx context.Context, t T, id string) error {
 
 func (c *Collection[T]) Aggregate(ctx context.Context, pipeline interface{}) (*mongo.Cursor, error) {
 	return c.Col.Aggregate(ctx, pipeline)
+}
+
+func (c *Collection[T]) DeleteOne(ctx context.Context, id string) error {
+	_, err := c.Col.DeleteOne(ctx, bson.M{
+		"_id": id,
+	})
+	return err
 }
