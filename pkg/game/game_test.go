@@ -126,6 +126,51 @@ func TestCall(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Player calls JINK in 6 player game",
+			game: SixPlayerGame(),
+			calls: []CallWrap{
+				{
+					playerID:             "5",
+					call:                 Jink,
+					expectedNextPlayerID: "1",
+				},
+			},
+		},
+		{
+			name: "Dealer takes JINK in 6 player game",
+			game: SixPlayerGame(),
+			calls: []CallWrap{
+				{
+					playerID:             "5",
+					call:                 Jink,
+					expectedNextPlayerID: "1",
+				},
+				{
+					playerID:             "1",
+					call:                 Jink,
+					expectedNextPlayerID: "1",
+				},
+			},
+			expectedGoerID: "1",
+		},
+		{
+			name: "Dealer lets JINK go in 6 player game",
+			game: SixPlayerGame(),
+			calls: []CallWrap{
+				{
+					playerID:             "5",
+					call:                 Jink,
+					expectedNextPlayerID: "1",
+				},
+				{
+					playerID:             "1",
+					call:                 Pass,
+					expectedNextPlayerID: "5",
+				},
+			},
+			expectedGoerID: "5",
+		},
 	}
 
 	for _, test := range tests {
