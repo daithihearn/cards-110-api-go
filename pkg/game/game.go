@@ -254,6 +254,13 @@ func (g *Game) Call(playerID string, call Call) error {
 		}
 	}
 
+	// Validate 10 call
+	if call == Ten {
+		if len(g.Players) != 6 {
+			return fmt.Errorf("can only call 10 in doubles")
+		}
+	}
+
 	// Set the player's call
 	for i, p := range g.Players {
 		if p.ID == playerID {

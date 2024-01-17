@@ -73,7 +73,51 @@ func TwoPlayerGame() Game {
 		Status:    Active,
 		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 		Players:   []Player{Player1(), Player2()},
-		AdminID:   "1",
+		CurrentRound: Round{
+			DealerID: "1",
+			Status:   Calling,
+			CurrentHand: Hand{
+				CurrentPlayerID: "2",
+			},
+		},
+		AdminID: "1",
+	}
+}
+
+func SixPlayerGame() Game {
+	return Game{
+		ID:        "1",
+		Name:      "Test Game",
+		Status:    Active,
+		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Players:   []Player{Player1(), Player2(), Player3(), Player4(), Player5(), Player6()},
+		CurrentRound: Round{
+			DealerID: "1",
+			Status:   Calling,
+			CurrentHand: Hand{
+				CurrentPlayerID: "5",
+			},
+		},
+		AdminID: "1",
+	}
+}
+
+func CalledGame() Game {
+	return Game{
+		ID:        "1",
+		Name:      "Test Game",
+		Status:    Active,
+		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Players:   []Player{Player1(), Player2()},
+		CurrentRound: Round{
+			DealerID: "1",
+			GoerID:   "2",
+			Status:   Called,
+			CurrentHand: Hand{
+				CurrentPlayerID: "2",
+			},
+		},
+		AdminID: "1",
 	}
 }
 
