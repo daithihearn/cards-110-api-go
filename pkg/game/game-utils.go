@@ -90,15 +90,17 @@ func createFirstRound(players []Player, dealerID string) (Round, error) {
 	hand := Hand{
 		Timestamp:       timestamp,
 		CurrentPlayerID: currentPlayer.ID,
+		PlayedCards:     make([]PlayedCard, 0),
 	}
 
 	// Create the round
 	round := Round{
-		Timestamp:   timestamp,
-		Number:      1,
-		DealerID:    dealerID,
-		Status:      CALLING,
-		CurrentHand: hand,
+		Timestamp:      timestamp,
+		Number:         1,
+		DealerID:       dealerID,
+		Status:         Calling,
+		CurrentHand:    hand,
+		CompletedHands: make([]Hand, 0),
 	}
 
 	return round, nil
@@ -133,7 +135,7 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 		ID:           "game-" + strconv.Itoa(rand.Intn(1000000)),
 		Timestamp:    time.Now(),
 		Name:         name,
-		Status:       ACTIVE,
+		Status:       Active,
 		AdminID:      adminID,
 		Players:      players,
 		CurrentRound: round,

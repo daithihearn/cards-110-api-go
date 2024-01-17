@@ -11,6 +11,11 @@ type Handler struct {
 	S ServiceI
 }
 
+type CreateGameRequest struct {
+	PlayerIDs []string `json:"players"`
+	Name      string   `json:"name"`
+}
+
 // Create @Summary Create a new game
 // @Description Creates a new game with the given name and players
 // @Tags Game
@@ -163,18 +168,17 @@ func (h *Handler) GetAll(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, games)
 }
 
-// Cancel @Summary Cancel a game
-// @Description Cancels a game with the given ID
+// Delete @Summary Delete a game
+// @Description Deletes a game with the given ID
 // @Tags Game
-// @ID cancel-game
-// @Produce json
+// @ID delete-game
 // @Security Bearer
 // @Param gameId path string true "Game ID"
-// @Success 200 {object} Game
+// @Success 200
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /game/{gameId} [delete]
-func (h *Handler) Cancel(c *gin.Context) {
+func (h *Handler) Delete(c *gin.Context) {
 	// Check the user is correctly authenticated
 	id, ok := auth.CheckValidated(c)
 	if !ok {
@@ -188,7 +192,56 @@ func (h *Handler) Cancel(c *gin.Context) {
 	gameId := c.Param("gameId")
 
 	// Cancel the game
-	game, err := h.S.Cancel(ctx, gameId, id)
+	err := h.S.Delete(ctx, gameId, id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+// Call @Summary Make a call
+// @Description Makes a call for the current user in the game with the given ID
+// @Tags Game
+// @ID call
+// @Produce json
+// @Security Bearer
+// @Param gameId path string true "Game ID"
+// @Param call query int true "Call"
+// @Success 200 {object} Game
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
+// @Router /game/{gameId}/call [put]
+func (h *Handler) Call(c *gin.Context) {
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
+		return
+	}
+
+	// Get the context from the request
+	ctx := c.Request.Context()
+
+	// Get the game ID from the request
+	gameId := c.Param("gameId")
+
+	// Get the call from the request
+	ca, exists := c.GetQuery("call")
+	if !exists {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "Missing call"})
+		return
+	}
+	// Check if is a valid call
+	call, err := ParseCall(ca)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	// Make the call
+	game, err := h.S.Call(ctx, gameId, id, call)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})

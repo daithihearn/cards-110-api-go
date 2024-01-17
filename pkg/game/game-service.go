@@ -12,7 +12,8 @@ type ServiceI interface {
 	Create(ctx context.Context, playerIDs []string, name string, adminID string) (Game, error)
 	Get(ctx context.Context, gameId string) (Game, bool, error)
 	GetAll(ctx context.Context) ([]Game, error)
-	Cancel(ctx context.Context, gameId string, adminId string) (Game, error)
+	Delete(ctx context.Context, gameId string, adminId string) error
+	Call(ctx context.Context, gameId string, playerId string, call Call) (Game, error)
 }
 
 type Service struct {
@@ -57,8 +58,33 @@ func (s *Service) GetAll(ctx context.Context) ([]Game, error) {
 	return s.Col.Find(ctx, bson.M{})
 }
 
-// Cancel a game.
-func (s *Service) Cancel(ctx context.Context, gameId string, adminId string) (Game, error) {
+// Delete a game.
+func (s *Service) Delete(ctx context.Context, gameId string, adminId string) error {
+	// Get the game from the database.
+	game, has, err := s.Get(ctx, gameId)
+	if err != nil {
+		return err
+	}
+	if !has {
+		return errors.New("game not found")
+	}
+
+	// Check correct admin
+	if game.AdminID != adminId {
+		return errors.New("not admin")
+	}
+
+	// Can only remove a game that is in an active state
+	if game.Status != Active {
+		return errors.New("can only delete games that are in an active state")
+	}
+
+	// Delete the game from the database.
+	return s.Col.DeleteOne(ctx, game.ID)
+}
+
+// Call make a call
+func (s *Service) Call(ctx context.Context, gameId string, playerId string, call Call) (Game, error) {
 	// Get the game from the database.
 	game, has, err := s.Get(ctx, gameId)
 	if err != nil {
@@ -68,13 +94,11 @@ func (s *Service) Cancel(ctx context.Context, gameId string, adminId string) (Ga
 		return Game{}, errors.New("game not found")
 	}
 
-	// Check correct admin
-	if game.AdminID != adminId {
-		return Game{}, errors.New("not admin")
+	// Make the call.
+	err = game.Call(playerId, call)
+	if err != nil {
+		return Game{}, err
 	}
-
-	// Cancel the game.
-	game.Cancel()
 
 	// Save the game to the database.
 	err = s.Col.UpdateOne(ctx, game, game.ID)

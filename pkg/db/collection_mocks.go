@@ -15,6 +15,7 @@ type MockCollection[T any] struct {
 	MockFindErr       *[]error
 	MockUpsertErr     *[]error
 	MockUpdateOneErr  *[]error
+	MockDeleteOneErr  *[]error
 }
 
 func (m *MockCollection[T]) FindOne(ctx context.Context, filter bson.M) (T, bool, error) {
@@ -98,4 +99,17 @@ func (m *MockCollection[T]) FindOneAndUpdate(ctx context.Context, filter bson.M,
 func (m *MockCollection[T]) FindOneAndReplace(ctx context.Context, filter bson.M, replacement T) (T, error) {
 	var result T
 	return result, nil
+}
+
+func (m *MockCollection[T]) DeleteOne(ctx context.Context, id string) error {
+	// Get the first element of the error array and remove it from the array, return nil if the array is empty
+	var err error
+	if len(*m.MockDeleteOneErr) > 0 {
+		err = (*m.MockDeleteOneErr)[0]
+		*m.MockDeleteOneErr = (*m.MockDeleteOneErr)[1:]
+	} else {
+		err = nil
+	}
+
+	return err
 }

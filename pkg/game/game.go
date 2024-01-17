@@ -2,31 +2,58 @@ package game
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
 type Status string
 
 const (
-	ACTIVE    Status = "ACTIVE"
-	FINISHED         = "FINISHED"
-	COMPLETED        = "COMPLETED"
-	CANCELLED        = "CANCELLED"
+	Active    Status = "ACTIVE"
+	Completed        = "COMPLETED"
 )
 
 type RoundStatus string
 
 const (
-	CALLING RoundStatus = "CALLING"
-	CALLED              = "CALLED"
-	BUYING              = "BUYING"
-	PLAYING             = "PLAYING"
+	Calling RoundStatus = "CALLING"
+	Called              = "CALLED"
+	Buying              = "BUYING"
+	Playing             = "PLAYING"
 )
+
+type Call int
+
+const (
+	Pass       Call = 0
+	Ten             = 10
+	Fifteen         = 15
+	Twenty          = 20
+	TwentyFive      = 25
+	Jink            = 30
+)
+
+func ParseCall(c string) (Call, error) {
+	switch c {
+	case "10":
+		return Ten, nil
+	case "15":
+		return Fifteen, nil
+	case "20":
+		return Twenty, nil
+	case "25":
+		return TwentyFive, nil
+	case "30":
+		return Jink, nil
+	default:
+		return 0, fmt.Errorf("invalid call")
+	}
+}
 
 type Player struct {
 	ID     string     `bson:"_id,omitempty" json:"id"`
 	Seat   int        `bson:"seatNumber" json:"seatNumber"`
-	Call   int        `bson:"call" json:"call"`
+	Call   Call       `bson:"call" json:"call"`
 	Cards  []CardName `bson:"cards" json:"-"`
 	Bought int        `bson:"cardsBought" json:"cardsBought"`
 	Score  int        `bson:"score" json:"score"`
@@ -80,23 +107,26 @@ type GameState struct {
 	IamGoer      bool       `json:"iamGoer"`
 	IamDealer    bool       `json:"iamDealer"`
 	IamAdmin     bool       `json:"iamAdmin"`
-	MaxCall      int        `json:"maxCall"`
+	MaxCall      Call       `json:"maxCall"`
 	Players      []Player   `json:"players"`
 	Round        Round      `json:"round"`
 	Cards        []CardName `json:"cards"`
 }
 
-func (g *Game) GetState(playerID string) (GameState, error) {
-	// Get the current player
-	var me Player
+func (g *Game) Me(playerID string) (Player, error) {
 	for _, p := range g.Players {
 		if p.ID == playerID {
-			me = p
-			break
+			return p, nil
 		}
 	}
-	if me.ID == "" {
-		return GameState{}, fmt.Errorf("player not found in game")
+	return Player{}, fmt.Errorf("player not found in game")
+}
+
+func (g *Game) GetState(playerID string) (GameState, error) {
+	// Get player
+	me, err := g.Me(playerID)
+	if err != nil {
+		return GameState{}, err
 	}
 
 	// 1. Find dummy
@@ -111,7 +141,7 @@ func (g *Game) GetState(playerID string) (GameState, error) {
 	}
 
 	// 2. Get max call
-	maxCall := -1
+	maxCall := Pass
 	for _, p := range g.Players {
 		if p.Call > maxCall {
 			maxCall = p.Call
@@ -120,7 +150,7 @@ func (g *Game) GetState(playerID string) (GameState, error) {
 
 	// 3. Add dummy if applicable
 	iamGoer := g.CurrentRound.GoerID == playerID
-	if iamGoer && g.CurrentRound.Status == CALLED && dummy.ID != "" {
+	if iamGoer && g.CurrentRound.Status == Called && dummy.ID != "" {
 		me.Cards = append(me.Cards, dummy.Cards...)
 	}
 
@@ -149,19 +179,177 @@ func (g *Game) GetState(playerID string) (GameState, error) {
 	return gameState, nil
 }
 
-func (g *Game) Cancel() {
-	g.Status = CANCELLED
+func (g *Game) EndRound() error {
+	// Add the current round to the completed rounds
+	g.Completed = append(g.Completed, g.CurrentRound)
+
+	// Get next dealer
+	nextDealer, err := nextPlayer(g.Players, g.CurrentRound.DealerID)
+	if err != nil {
+		return err
+	}
+
+	// Create next hand
+	nextPlayer, err := nextPlayer(g.Players, nextDealer.ID)
+	if err != nil {
+		return err
+	}
+	nextHand := Hand{
+		Timestamp:       time.Now(),
+		CurrentPlayerID: nextPlayer.ID,
+	}
+
+	// Create a new round
+	g.CurrentRound = Round{
+		Timestamp:   time.Now(),
+		Number:      g.CurrentRound.Number + 1,
+		DealerID:    nextDealer.ID,
+		Status:      Calling,
+		CurrentHand: nextHand,
+	}
+
+	// Deal the cards
+	deck := ShuffleCards(NewDeck())
+	g.Deck, g.Players = DealCards(deck, g.Players)
+
+	return nil
 }
 
-type PlayerStats struct {
-	GameID    string    `bson:"gameId" json:"gameId"`
-	Timestamp time.Time `bson:"timestamp" json:"timestamp"`
-	Winner    bool      `bson:"winner" json:"winner"`
-	Score     int       `bson:"score" json:"score"`
-	Rings     int       `bson:"rings" json:"rings"`
-}
+func (g *Game) Call(playerID string, call Call) error {
+	// Check the game is active
+	if g.Status != Active {
+		return fmt.Errorf("game not active")
+	}
 
-type CreateGameRequest struct {
-	PlayerIDs []string `json:"players"`
-	Name      string   `json:"name"`
+	// Check current round is calling
+	if g.CurrentRound.Status != Calling {
+		return fmt.Errorf("round not calling")
+	}
+
+	// Check the player is the current player
+	if g.CurrentRound.CurrentHand.CurrentPlayerID != playerID {
+		return fmt.Errorf("not current player")
+	}
+
+	// If they are in the bunker (score < -30) they can only pass
+	state, err := g.GetState(playerID)
+	if err != nil {
+		return err
+	}
+	if state.Me.Score < -30 && call != Pass {
+		return fmt.Errorf("player in bunker")
+	}
+
+	// Check the call is valid i.e. > all previous calls or a pass
+	// The dealer can take a call of greater than 10
+	if call != Pass {
+		callForComparison := call
+		if state.IamDealer {
+			callForComparison++
+		}
+		for _, p := range g.Players {
+			if p.Call >= callForComparison {
+				return fmt.Errorf("invalid call")
+			}
+		}
+	}
+
+	// Validate 10 call
+	if call == Ten {
+		if len(g.Players) != 6 {
+			return fmt.Errorf("can only call 10 in doubles")
+		}
+	}
+
+	// Set the player's call
+	for i, p := range g.Players {
+		if p.ID == playerID {
+			g.Players[i].Call = call
+			break
+		}
+	}
+
+	// Set next player/round status
+	if call == Jink {
+		log.Printf("Jink called by %s", playerID)
+		if state.IamDealer {
+			// If the dealer calls Jink, calling is complete
+			g.CurrentRound.Status = Called
+			g.CurrentRound.GoerID = playerID
+			g.CurrentRound.CurrentHand.CurrentPlayerID = playerID
+		} else {
+			// If any other player calls Jink, jump to the dealer
+			g.CurrentRound.CurrentHand.CurrentPlayerID = g.CurrentRound.DealerID
+		}
+	} else if state.IamDealer {
+		// Get the highest calls
+		var topCall Call
+		for _, p := range g.Players {
+			if p.Call > topCall {
+				topCall = p.Call
+			}
+		}
+
+		if topCall <= Ten {
+			log.Printf("No one called. Starting new round...")
+			err = g.EndRound()
+			return err
+		}
+
+		// Get the players who made the top call (the dealer may have taken a call, this will result in more than one player)
+		var topCallPlayers []Player
+		for _, p := range g.Players {
+			if p.Call == topCall {
+				topCallPlayers = append(topCallPlayers, p)
+			}
+		}
+		if len(topCallPlayers) == 0 || len(topCallPlayers) > 2 {
+			return fmt.Errorf("invalid call state. There are %d top callers of %d", len(topCallPlayers), topCall)
+		}
+		var takenPlayer Player
+		var caller Player
+		if len(topCallPlayers) == 2 {
+			for _, p := range topCallPlayers {
+				if p.ID == g.CurrentRound.DealerID {
+					caller = p
+				} else {
+					takenPlayer = p
+				}
+			}
+		} else {
+			caller = topCallPlayers[0]
+		}
+
+		if takenPlayer.ID != "" {
+			log.Printf("Dealer seeing call by %s", takenPlayer.ID)
+			g.CurrentRound.DealerSeeing = true
+			g.CurrentRound.CurrentHand.CurrentPlayerID = takenPlayer.ID
+		} else {
+			log.Printf("Call successful. %s is goer", caller.ID)
+			g.CurrentRound.Status = Called
+			g.CurrentRound.GoerID = caller.ID
+			g.CurrentRound.CurrentHand.CurrentPlayerID = caller.ID
+		}
+
+	} else if g.CurrentRound.DealerSeeing {
+		log.Printf("%s was taken by the dealer.", playerID)
+		if call == Pass {
+			log.Printf("%s is letting the dealer go.", playerID)
+			g.CurrentRound.Status = Called
+			g.CurrentRound.GoerID = g.CurrentRound.DealerID
+			g.CurrentRound.CurrentHand.CurrentPlayerID = g.CurrentRound.DealerID
+		} else {
+			log.Printf("%s has raised the call.", playerID)
+			g.CurrentRound.CurrentHand.CurrentPlayerID = g.CurrentRound.DealerID
+			g.CurrentRound.DealerSeeing = false
+		}
+	} else {
+		log.Printf("Calling not complete. Next player...")
+		nextPlayer, err := nextPlayer(g.Players, playerID)
+		if err != nil {
+			return err
+		}
+		g.CurrentRound.CurrentHand.CurrentPlayerID = nextPlayer.ID
+	}
+	return nil
 }

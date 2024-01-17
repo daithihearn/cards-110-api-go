@@ -13,7 +13,7 @@ import (
 )
 
 type ServiceI interface {
-	GetStats(ctx context.Context, playerId string) ([]game.PlayerStats, error)
+	GetStats(ctx context.Context, playerId string) ([]PlayerStats, error)
 }
 
 type Service struct {
@@ -21,7 +21,7 @@ type Service struct {
 }
 
 // GetStats Get the stats for a player.
-func (s *Service) GetStats(ctx context.Context, playerId string) ([]game.PlayerStats, error) {
+func (s *Service) GetStats(ctx context.Context, playerId string) ([]PlayerStats, error) {
 
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{{Key: "status", Value: "FINISHED"}, {Key: "players._id", Value: playerId}}}},
@@ -38,7 +38,7 @@ func (s *Service) GetStats(ctx context.Context, playerId string) ([]game.PlayerS
 
 	cursor, err := s.Col.Aggregate(ctx, pipeline)
 	if err != nil {
-		return []game.PlayerStats{}, err
+		return []PlayerStats{}, err
 	}
 
 	defer func(cursor *mongo.Cursor, ctx context.Context) {
@@ -50,28 +50,28 @@ func (s *Service) GetStats(ctx context.Context, playerId string) ([]game.PlayerS
 
 	// Return an empty slice if there are no results.
 	if cursor.RemainingBatchLength() == 0 {
-		return []game.PlayerStats{}, nil
+		return []PlayerStats{}, nil
 	}
 
 	// Iterate over the cursor and decode each result.
-	var results []game.PlayerStats
+	var results []PlayerStats
 	for cursor.Next(ctx) {
 		var result bson.M
 		if err = cursor.Decode(&result); err != nil {
 			// Log the detailed error
 			log.Printf("Error decoding cursor result: %v", err)
-			return []game.PlayerStats{}, err
+			return []PlayerStats{}, err
 		}
 
 		// Map the result to a PlayerStats struct.
-		playerStats := game.PlayerStats{}
+		playerStats := PlayerStats{}
 
 		// Safely assert types
 		if gameId, ok := result["gameId"].(string); ok {
 			playerStats.GameID = gameId
 		} else {
 			// Handle missing or invalid gameId
-			return []game.PlayerStats{}, fmt.Errorf("failed to decode gameID")
+			return []PlayerStats{}, fmt.Errorf("failed to decode gameID")
 		}
 
 		if timestamp, ok := result["timestamp"].(primitive.DateTime); ok {
@@ -79,25 +79,25 @@ func (s *Service) GetStats(ctx context.Context, playerId string) ([]game.PlayerS
 			playerStats.Timestamp = time.Unix(int64(timestamp)/1000, 0)
 		} else {
 			// Handle missing or invalid timestamp
-			return []game.PlayerStats{}, fmt.Errorf("timestamp is not a valid DateTime")
+			return []PlayerStats{}, fmt.Errorf("timestamp is not a valid DateTime")
 		}
 
 		if winner, ok := result["winner"].(bool); ok {
 			playerStats.Winner = winner
 		} else {
-			return []game.PlayerStats{}, fmt.Errorf("winner is not a bool")
+			return []PlayerStats{}, fmt.Errorf("winner is not a bool")
 		}
 
 		if score, ok := result["score"].(int32); ok {
 			playerStats.Score = int(score)
 		} else {
-			return []game.PlayerStats{}, fmt.Errorf("score is not an int")
+			return []PlayerStats{}, fmt.Errorf("score is not an int")
 		}
 
 		if rings, ok := result["rings"].(int32); ok {
 			playerStats.Rings = int(rings)
 		} else {
-			return []game.PlayerStats{}, fmt.Errorf("rings is not an int")
+			return []PlayerStats{}, fmt.Errorf("rings is not an int")
 		}
 
 		results = append(results, playerStats)
