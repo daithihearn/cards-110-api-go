@@ -110,6 +110,22 @@ func TestCall(t *testing.T) {
 			},
 			expectedGoerID: "1",
 		},
+		{
+			name: "All players pass",
+			game: TwoPlayerGame(),
+			calls: []CallWrap{
+				{
+					playerID:             "2",
+					call:                 Pass,
+					expectedNextPlayerID: "1",
+				},
+				{
+					playerID:             "1",
+					call:                 Pass,
+					expectedNextPlayerID: "1",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
