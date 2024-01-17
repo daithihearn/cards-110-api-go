@@ -7,9 +7,10 @@ type CallWrap struct {
 	call                 Call
 	expectedNextPlayerID string
 	expectingError       bool
+	expectedRevision     int
 }
 
-func TestCall(t *testing.T) {
+func TestCallMethod(t *testing.T) {
 	tests := []struct {
 		name           string
 		game           Game
@@ -23,33 +24,37 @@ func TestCall(t *testing.T) {
 				playerID:             "2",
 				call:                 Fifteen,
 				expectedNextPlayerID: "1",
+				expectedRevision:     1,
 			}},
 		},
 		{
 			name: "Completed game",
 			game: CompletedGame(),
 			calls: []CallWrap{{
-				playerID:       "2",
-				call:           Fifteen,
-				expectingError: true,
+				playerID:         "2",
+				call:             Fifteen,
+				expectingError:   true,
+				expectedRevision: 0,
 			}},
 		},
 		{
 			name: "Game in called state",
 			game: CalledGame(),
 			calls: []CallWrap{{
-				playerID:       "2",
-				call:           Fifteen,
-				expectingError: true,
+				playerID:         "2",
+				call:             Fifteen,
+				expectingError:   true,
+				expectedRevision: 0,
 			}},
 		},
 		{
 			name: "Invalid call 10 in a 2 player game",
 			game: TwoPlayerGame(),
 			calls: []CallWrap{{
-				playerID:       "2",
-				call:           Ten,
-				expectingError: true,
+				playerID:         "2",
+				call:             Ten,
+				expectingError:   true,
+				expectedRevision: 0,
 			}},
 		},
 		{
@@ -59,6 +64,7 @@ func TestCall(t *testing.T) {
 				playerID:             "5",
 				call:                 Ten,
 				expectedNextPlayerID: "6",
+				expectedRevision:     1,
 			}},
 		},
 		{
@@ -69,11 +75,13 @@ func TestCall(t *testing.T) {
 					playerID:             "2",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 				{
-					playerID:       "1",
-					call:           Fifteen,
-					expectingError: true,
+					playerID:         "1",
+					call:             Fifteen,
+					expectingError:   true,
+					expectedRevision: 1,
 				},
 			},
 		},
@@ -85,11 +93,13 @@ func TestCall(t *testing.T) {
 					playerID:             "2",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 				{
 					playerID:             "1",
 					call:                 Twenty,
 					expectedNextPlayerID: "2",
+					expectedRevision:     2,
 				},
 			},
 		},
@@ -101,11 +111,13 @@ func TestCall(t *testing.T) {
 					playerID:             "2",
 					call:                 Fifteen,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 				{
 					playerID:             "1",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
+					expectedRevision:     2,
 				},
 			},
 			expectedGoerID: "1",
@@ -118,11 +130,13 @@ func TestCall(t *testing.T) {
 					playerID:             "2",
 					call:                 Pass,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 				{
 					playerID:             "1",
 					call:                 Pass,
 					expectedNextPlayerID: "1",
+					expectedRevision:     2,
 				},
 			},
 		},
@@ -134,6 +148,7 @@ func TestCall(t *testing.T) {
 					playerID:             "5",
 					call:                 Jink,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 			},
 		},
@@ -145,11 +160,13 @@ func TestCall(t *testing.T) {
 					playerID:             "5",
 					call:                 Jink,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 				{
 					playerID:             "1",
 					call:                 Jink,
 					expectedNextPlayerID: "1",
+					expectedRevision:     2,
 				},
 			},
 			expectedGoerID: "1",
@@ -162,11 +179,13 @@ func TestCall(t *testing.T) {
 					playerID:             "5",
 					call:                 Jink,
 					expectedNextPlayerID: "1",
+					expectedRevision:     1,
 				},
 				{
 					playerID:             "1",
 					call:                 Pass,
 					expectedNextPlayerID: "5",
+					expectedRevision:     2,
 				},
 			},
 			expectedGoerID: "5",
@@ -195,7 +214,12 @@ func TestCall(t *testing.T) {
 					if test.game.CurrentRound.CurrentHand.CurrentPlayerID != call.expectedNextPlayerID {
 						t.Errorf("expected player %s to be current player, got %s", call.expectedNextPlayerID, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
 					}
+					// Check revision has been incremented
+					if test.game.Revision != call.expectedRevision {
+						t.Errorf("expected revision %d, got %d", call.expectedRevision, test.game.Revision)
+					}
 				}
+
 			}
 			if test.expectedGoerID != "" {
 				if test.game.CurrentRound.GoerID != test.expectedGoerID {

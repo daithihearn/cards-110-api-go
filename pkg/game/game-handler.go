@@ -5,6 +5,7 @@ import (
 	"cards-110-api/pkg/auth"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type Handler struct {
@@ -99,8 +100,10 @@ func (h *Handler) Get(c *gin.Context) {
 // @ID get-game-state
 // @Produce json
 // @Param gameId path string true "Game ID"
+// @Param revision query int false "Revision"
 // @Security Bearer
-// @Success 200 {object} GameState
+// @Success 200 {object} State
+// @Success 204 "No Content"
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /game/{gameId}/state [get]
@@ -117,8 +120,11 @@ func (h *Handler) GetState(c *gin.Context) {
 	// Get the game ID from the request
 	gameId := c.Param("gameId")
 
+	// Get the revision from the request
+	revision, exists := c.GetQuery("revision")
+
 	// Get the game from the database
-	game, has, err := h.S.Get(ctx, gameId)
+	state, has, err := h.S.GetState(ctx, gameId, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
@@ -128,11 +134,19 @@ func (h *Handler) GetState(c *gin.Context) {
 		return
 	}
 
-	// Get the state for the current user
-	state, err := game.GetState(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-		return
+	// Check if the game has been updated
+	if exists {
+		// First convert the revision to an int
+		// If the revision is less than or equal to the current revision, return no content
+		rev, err := strconv.Atoi(revision)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "Invalid revision"})
+			return
+		}
+		if state.Revision <= rev {
+			c.Status(http.StatusNoContent)
+			return
+		}
 	}
 
 	c.IndentedJSON(http.StatusOK, state)

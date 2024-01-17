@@ -11,6 +11,7 @@ import (
 type ServiceI interface {
 	Create(ctx context.Context, playerIDs []string, name string, adminID string) (Game, error)
 	Get(ctx context.Context, gameId string) (Game, bool, error)
+	GetState(ctx context.Context, gameId string, playerId string) (State, bool, error)
 	GetAll(ctx context.Context) ([]Game, error)
 	Delete(ctx context.Context, gameId string, adminId string) error
 	Call(ctx context.Context, gameId string, playerId string, call Call) (Game, error)
@@ -51,6 +52,22 @@ func (s *Service) Create(ctx context.Context, playerIDs []string, name string, a
 // Get a game by ID.
 func (s *Service) Get(ctx context.Context, gameId string) (Game, bool, error) {
 	return s.Col.FindOne(ctx, bson.M{"_id": gameId})
+}
+
+func (s *Service) GetState(ctx context.Context, gameId string, playerId string) (State, bool, error) {
+	// Get the game from the database.
+	game, has, err := s.Get(ctx, gameId)
+	if err != nil || !has {
+		return State{}, has, err
+	}
+
+	// Get the state for the player.
+	state, err := game.GetState(playerId)
+	if err != nil {
+		return State{}, true, err
+	}
+
+	return state, true, nil
 }
 
 // GetAll Get all games.

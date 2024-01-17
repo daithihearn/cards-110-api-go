@@ -331,3 +331,116 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestCall(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name               string
+		gameID             string
+		playerID           string
+		call               Call
+		mockGetResult      *[]Game
+		mockGetExists      *[]bool
+		mockGetError       *[]error
+		mockUpdateOneError *[]error
+		expectingError     bool
+		expectedRevision   int
+	}{
+		{
+			name:               "simple call",
+			gameID:             TwoPlayerGame().ID,
+			playerID:           "2",
+			call:               Jink,
+			mockGetResult:      &[]Game{TwoPlayerGame()},
+			mockGetExists:      &[]bool{true},
+			mockGetError:       &[]error{nil},
+			mockUpdateOneError: &[]error{nil},
+			expectedRevision:   1,
+		},
+		{
+			name:           "game not found",
+			gameID:         "1",
+			playerID:       "2",
+			call:           Jink,
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{nil},
+			expectingError: true,
+		},
+		{
+			name:           "error thrown getting game",
+			gameID:         "1",
+			playerID:       "2",
+			call:           Jink,
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{errors.New("something went wrong")},
+			expectingError: true,
+		},
+		{
+			name:           "error thrown getting game - true exists",
+			gameID:         "1",
+			playerID:       "2",
+			call:           Jink,
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{true},
+			mockGetError:   &[]error{errors.New("something went wrong")},
+			expectingError: true,
+		},
+		{
+			name:               "error thrown updating game",
+			gameID:             TwoPlayerGame().ID,
+			playerID:           "2",
+			call:               Jink,
+			mockGetResult:      &[]Game{TwoPlayerGame()},
+			mockGetExists:      &[]bool{true},
+			mockGetError:       &[]error{nil},
+			mockUpdateOneError: &[]error{errors.New("something went wrong")},
+			expectingError:     true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockCol := &db.MockCollection[Game]{
+				MockFindOneResult: test.mockGetResult,
+				MockFindOneExists: test.mockGetExists,
+				MockFindOneErr:    test.mockGetError,
+				MockUpdateOneErr:  test.mockUpdateOneError,
+			}
+
+			ds := &Service{
+				Col: mockCol,
+			}
+
+			game, err := ds.Call(ctx, test.gameID, test.playerID, test.call)
+
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				var player Player
+				for _, p := range game.Players {
+					if p.ID == test.playerID {
+						player = p
+						break
+					}
+				}
+				// Check call has been made
+				if player.ID == "" {
+					t.Errorf("Player not found")
+				}
+
+				if player.Call != test.call {
+					t.Errorf("expected call %v, got %v", test.call, player.Call)
+				}
+				// Check revision has been incremented
+				if game.Revision != test.expectedRevision {
+					t.Errorf("expected revision %d, got %d", test.expectedRevision, game.Revision)
+				}
+			}
+		})
+	}
+}
