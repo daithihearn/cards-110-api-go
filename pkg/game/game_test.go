@@ -443,7 +443,7 @@ func TestGame_SelectSuit(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no error, got %v", err)
 				}
-				if !containsAllUnique(state.Cards, test.cards) {
+				if !compare(state.Cards, test.cards) {
 					t.Errorf("expected player to have all of the selected cards %v, got %v", test.cards, state.Cards)
 				}
 			}
