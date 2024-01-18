@@ -626,11 +626,11 @@ func TestSelectSuit(t *testing.T) {
 		},
 		{
 			name:               "error thrown updating game",
-			gameID:             TwoPlayerGame().ID,
+			gameID:             CalledGame().ID,
 			playerID:           "2",
 			suit:               Clubs,
 			cards:              []CardName{KING_DIAMONDS},
-			mockGetResult:      &[]Game{TwoPlayerGame()},
+			mockGetResult:      &[]Game{CalledGame()},
 			mockGetError:       &[]error{nil},
 			mockGetExists:      &[]bool{true},
 			mockUpdateOneError: &[]error{errors.New("something went wrong")},
