@@ -17,6 +17,25 @@ func validateNumberOfPlayers(playerIDs []string) error {
 	return nil
 }
 
+func ParseCall(c string) (Call, error) {
+	switch c {
+	case "0":
+		return Pass, nil
+	case "10":
+		return Ten, nil
+	case "15":
+		return Fifteen, nil
+	case "20":
+		return Twenty, nil
+	case "25":
+		return TwentyFive, nil
+	case "30":
+		return Jink, nil
+	default:
+		return 0, fmt.Errorf("invalid call")
+	}
+}
+
 // shuffle a slice of strings
 func shuffle(input []string) []string {
 	shuffled := make([]string, len(input))
@@ -72,9 +91,6 @@ func nextPlayer(players []Player, currentPlayerId string) (Player, error) {
 	}
 
 	nextIndex := (currentIndex + 1) % len(players)
-	if players[nextIndex].ID == "dummy" {
-		return nextPlayer(players, players[nextIndex].ID)
-	}
 
 	return players[nextIndex], nil
 }
@@ -127,8 +143,15 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 	round, err := createFirstRound(players, dealer)
 
 	// Deal the cards
-	deck := ShuffleCards(NewDeck())
-	deck, players = DealCards(deck, players)
+	deck, hands := DealCards(ShuffleCards(NewDeck()), len(players))
+	var dummy []CardName
+	for i, hand := range hands {
+		if i >= len(players) {
+			dummy = hand
+			break
+		}
+		players[i].Cards = hand
+	}
 
 	// Create the game
 	game := Game{
@@ -138,9 +161,34 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 		Status:       Active,
 		AdminID:      adminID,
 		Players:      players,
+		Dummy:        dummy,
 		CurrentRound: round,
 		Deck:         deck,
 	}
 
 	return game, nil
+}
+
+// containsAllUnique checks if targetSlice contains all unique elements of referenceSlice.
+func containsAllUnique(referenceSlice, targetSlice []CardName) bool {
+	if len(targetSlice) > len(referenceSlice) {
+		return false
+	}
+
+	existsInReferenceSlice := make(map[CardName]bool)
+	for _, item := range referenceSlice {
+		existsInReferenceSlice[item] = true
+	}
+
+	seenInTargetSlice := make(map[CardName]bool)
+	for _, item := range targetSlice {
+		if _, ok := existsInReferenceSlice[item]; !ok {
+			return false // Element in targetSlice is not in referenceSlice
+		}
+		if _, seen := seenInTargetSlice[item]; seen {
+			return false // Element is not unique in targetSlice
+		}
+		seenInTargetSlice[item] = true
+	}
+	return true
 }

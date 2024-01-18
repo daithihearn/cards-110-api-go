@@ -22,18 +22,7 @@ func (g *Game) GetState(playerID string) (State, error) {
 		return State{}, err
 	}
 
-	// 1. Find dummy
-	var dummy Player
-	if g.CurrentRound.GoerID == playerID {
-		for _, p := range g.Players {
-			if p.ID == "dummy" {
-				dummy = p
-				break
-			}
-		}
-	}
-
-	// 2. Get max call
+	// 1. Get max call
 	maxCall := Pass
 	for _, p := range g.Players {
 		if p.Call > maxCall {
@@ -41,13 +30,13 @@ func (g *Game) GetState(playerID string) (State, error) {
 		}
 	}
 
-	// 3. Add dummy if applicable
+	// 2. Add dummy if applicable
 	iamGoer := g.CurrentRound.GoerID == playerID
-	if iamGoer && g.CurrentRound.Status == Called && dummy.ID != "" {
-		me.Cards = append(me.Cards, dummy.Cards...)
+	if iamGoer && g.CurrentRound.Status == Called && g.Dummy != nil {
+		me.Cards = append(me.Cards, g.Dummy...)
 	}
 
-	// 4. Return player's game state
+	// 3. Return player's game state
 	gameState := State{
 		ID:           g.ID,
 		Revision:     g.Revision,
@@ -61,13 +50,7 @@ func (g *Game) GetState(playerID string) (State, error) {
 		Status:       g.Status,
 		Round:        g.CurrentRound,
 		MaxCall:      maxCall,
-		Players:      make([]Player, 0),
-	}
-
-	for _, p := range g.Players {
-		if p.ID != "dummy" {
-			gameState.Players = append(gameState.Players, p)
-		}
+		Players:      g.Players,
 	}
 
 	return gameState, nil
@@ -103,8 +86,17 @@ func (g *Game) EndRound() error {
 	}
 
 	// Deal the cards
-	deck := ShuffleCards(NewDeck())
-	g.Deck, g.Players = DealCards(deck, g.Players)
+	deck, hands := DealCards(ShuffleCards(NewDeck()), len(g.Players))
+	var dummy []CardName
+	for i, hand := range hands {
+		if i >= len(g.Players) {
+			dummy = hand
+			break
+		}
+		g.Players[i].Cards = hand
+	}
+	g.Dummy = dummy
+	g.Deck = deck
 
 	// Increment revision
 	g.Revision++
@@ -248,6 +240,80 @@ func (g *Game) Call(playerID string, call Call) error {
 		}
 		g.CurrentRound.CurrentHand.CurrentPlayerID = nextPlayer.ID
 	}
+
+	// Increment revision
+	g.Revision++
+
+	return nil
+}
+
+// MinKeep returns the minimum number of cards that must be kept by a player
+func (g *Game) MinKeep() (int, error) {
+	switch len(g.Players) {
+	case 2:
+		return 0, nil
+	case 3:
+		return 0, nil
+	case 4:
+		return 0, nil
+	case 5:
+		return 1, nil
+	case 6:
+		return 2, nil
+	}
+	return 0, fmt.Errorf("invalid number of players")
+}
+
+func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
+	// Verify the at the round is in the called state
+	if g.CurrentRound.Status != Called {
+		return fmt.Errorf("round must be in the called state to select a suit")
+	}
+
+	// Verify that the player is the goer
+	if g.CurrentRound.GoerID != playerID {
+		return fmt.Errorf("only the goer can select the suit")
+	}
+
+	// Verify the number of cards selected is valid (<=5 and >= minKeep)
+	minKeep, err := g.MinKeep()
+	if err != nil {
+		return err
+	}
+	if len(cards) > 5 || len(cards) < minKeep {
+		return fmt.Errorf("invalid number of cards selected")
+	}
+
+	// Verify the cards are valid (must be either in the player's hand or the dummy's hand and must be unique
+	state, err := g.GetState(playerID)
+	if err != nil {
+		return err
+	}
+	if !containsAllUnique(state.Cards, cards) {
+		return fmt.Errorf("invalid card selected")
+	}
+
+	// Update the round
+	g.CurrentRound.Status = Buying
+	g.CurrentRound.Suit = suit
+
+	// Set my cards
+	for i, p := range g.Players {
+		if p.ID == playerID {
+			g.Players[i].Cards = cards
+			break
+		}
+	}
+
+	// Remove the dummy player
+	g.Dummy = nil
+
+	// Set the next player
+	np, err := nextPlayer(g.Players, playerID)
+	if err != nil {
+		return err
+	}
+	g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
 
 	// Increment revision
 	g.Revision++

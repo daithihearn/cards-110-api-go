@@ -15,16 +15,16 @@ func ShuffleCards(cards []CardName) []CardName {
 	return shuffled
 }
 
-func DealCards(cards []CardName, players []Player) ([]CardName, []Player) {
+func DealCards(deck []CardName, numPlayers int) ([]CardName, [][]CardName) {
+	hands := make([][]CardName, numPlayers+1)
 	// Deal the cards
 	for i := 0; i < 5; i++ {
-		for j := 0; j < len(players); j++ {
-			players[j].Cards = append(players[j].Cards, cards[0])
-			cards = cards[1:]
+		for j := 0; j < numPlayers+1; j++ {
+			hands[j] = append(hands[j], deck[0])
+			deck = deck[1:]
 		}
 	}
-
-	return cards, players
+	return deck, hands
 }
 
 func NewDeck() []CardName {

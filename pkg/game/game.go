@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -32,23 +31,6 @@ const (
 	Jink            = 30
 )
 
-func ParseCall(c string) (Call, error) {
-	switch c {
-	case "10":
-		return Ten, nil
-	case "15":
-		return Fifteen, nil
-	case "20":
-		return Twenty, nil
-	case "25":
-		return TwentyFive, nil
-	case "30":
-		return Jink, nil
-	default:
-		return 0, fmt.Errorf("invalid call")
-	}
-}
-
 type Player struct {
 	ID     string     `bson:"_id,omitempty" json:"id"`
 	Seat   int        `bson:"seatNumber" json:"seatNumber"`
@@ -68,7 +50,7 @@ type PlayedCard struct {
 
 type Hand struct {
 	Timestamp       time.Time    `bson:"timestamp" json:"timestamp"`
-	LeadOut         CardName     `bson:"leadOut" json:"leadOut"`
+	LeadOut         CardName     `bson:"leadOut" json:"leadOut,omitempty"`
 	CurrentPlayerID string       `bson:"currentPlayerId" json:"currentPlayerId"`
 	PlayedCards     []PlayedCard `bson:"playedCards" json:"playedCards"`
 }
@@ -77,8 +59,8 @@ type Round struct {
 	Timestamp      time.Time   `bson:"timestamp" json:"timestamp"`
 	Number         int         `bson:"number" json:"number"`
 	DealerID       string      `bson:"dealerId" json:"dealerId"`
-	GoerID         string      `bson:"goerId" json:"goerId"`
-	Suit           Suit        `bson:"suit" json:"suit"`
+	GoerID         string      `bson:"goerId" json:"goerId,omitempty"`
+	Suit           Suit        `bson:"suit" json:"suit,omitempty"`
 	Status         RoundStatus `bson:"status" json:"status"`
 	CurrentHand    Hand        `bson:"currentHand" json:"currentHand"`
 	DealerSeeing   bool        `bson:"dealerSeeingCall" json:"dealerSeeingCall"`
@@ -93,6 +75,7 @@ type Game struct {
 	Name         string     `bson:"name" json:"name"`
 	Status       Status     `bson:"status" json:"status"`
 	Players      []Player   `bson:"players" json:"players"`
+	Dummy        []CardName `bson:"dummy" json:"dummy"`
 	CurrentRound Round      `bson:"currentRound" json:"currentRound"`
 	Completed    []Round    `bson:"completedRounds" json:"completedRounds"`
 	Deck         []CardName `bson:"deck" json:"-"`
