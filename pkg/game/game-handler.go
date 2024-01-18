@@ -224,7 +224,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // @Security Bearer
 // @Param gameId path string true "Game ID"
 // @Param call query int true "Call"
-// @Success 200 {object} Game
+// @Success 200 {object} State
 // @Failure 400 {object} api.ErrorResponse
 // @Failure 500 {object} api.ErrorResponse
 // @Router /game/{gameId}/call [put]
@@ -261,6 +261,62 @@ func (h *Handler) Call(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
 	}
+	state, err := game.GetState(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, state)
+}
 
-	c.IndentedJSON(http.StatusOK, game)
+type SelectSuitRequest struct {
+	Suit  Suit       `json:"suit"`
+	Cards []CardName `json:"cards"`
+}
+
+// SelectSuit @Summary Select the suit
+// @Description When in the Called state, the Goer can select the suit and what cards they want to keep from their hand and the dummy hand
+// @Tags Game
+// @ID select-suit
+// @Produce json
+// @Security Bearer
+// @Param gameId path string true "Game ID"
+// @Para body SelectSuitRequest true "Select Suit Request"
+// @Success 200 {object} State
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
+// @Router /game/{gameId}/suit [put]
+func (h *Handler) SelectSuit(c *gin.Context) {
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
+		return
+	}
+
+	// Get the context from the request
+	ctx := c.Request.Context()
+
+	// Get the game ID from the request
+	gameId := c.Param("gameId")
+
+	// Get the request body
+	var req SelectSuitRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	// Select the suit
+	game, err := h.S.SelectSuit(ctx, gameId, id, req.Suit, req.Cards)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	state, err := game.GetState(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, state)
 }
