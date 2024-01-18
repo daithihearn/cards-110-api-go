@@ -444,3 +444,218 @@ func TestCall(t *testing.T) {
 		})
 	}
 }
+
+func TestGetState(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name           string
+		gameID         string
+		playerID       string
+		mockGetResult  *[]Game
+		mockGetExists  *[]bool
+		mockGetError   *[]error
+		expectedResult State
+		expectingError bool
+	}{
+		{
+			name:          "simple get state",
+			gameID:        TwoPlayerGame().ID,
+			playerID:      "2",
+			mockGetResult: &[]Game{TwoPlayerGame()},
+			mockGetExists: &[]bool{true},
+			mockGetError:  &[]error{nil},
+			expectedResult: State{
+				ID:           TwoPlayerGame().ID,
+				Revision:     TwoPlayerGame().Revision,
+				Me:           TwoPlayerGame().Players[1],
+				IamSpectator: false,
+				IsMyGo:       false,
+				IamGoer:      false,
+				IamDealer:    false,
+				IamAdmin:     false,
+				Cards:        TwoPlayerGame().Players[1].Cards,
+				Status:       TwoPlayerGame().Status,
+				Round:        TwoPlayerGame().CurrentRound,
+				MaxCall:      TwoPlayerGame().Players[0].Call,
+				Players:      TwoPlayerGame().Players,
+			},
+			expectingError: false,
+		},
+		{
+			name:           "game not found",
+			gameID:         "1",
+			playerID:       "2",
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{nil},
+			expectingError: false,
+		},
+		{
+			name:           "error thrown getting game",
+			gameID:         "1",
+			playerID:       "2",
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{errors.New("something went wrong")},
+			expectingError: true,
+		},
+		{
+			name:           "error thrown getting game - true exists",
+			gameID:         "1",
+			playerID:       "2",
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{true},
+			mockGetError:   &[]error{errors.New("something went wrong")},
+			expectingError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockCol := &db.MockCollection[Game]{
+				MockFindOneResult: test.mockGetResult,
+				MockFindOneExists: test.mockGetExists,
+				MockFindOneErr:    test.mockGetError,
+			}
+
+			ds := &Service{
+				Col: mockCol,
+			}
+
+			result, _, err := ds.GetState(ctx, test.gameID, test.playerID)
+
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if result.ID != test.expectedResult.ID {
+					t.Errorf("expected result %v, got %v", test.expectedResult.ID, result.ID)
+				}
+
+			}
+
+		})
+	}
+}
+
+func TestSelectSuit(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name               string
+		gameID             string
+		playerID           string
+		suit               Suit
+		cards              []CardName
+		mockGetResult      *[]Game
+		mockGetExists      *[]bool
+		mockGetError       *[]error
+		mockUpdateOneError *[]error
+		expectingError     bool
+		expectedRevision   int
+	}{
+		{
+			name:               "simple select suit",
+			gameID:             CalledGame().ID,
+			playerID:           "2",
+			suit:               Clubs,
+			cards:              []CardName{KING_DIAMONDS},
+			mockGetResult:      &[]Game{CalledGame()},
+			mockGetExists:      &[]bool{true},
+			mockGetError:       &[]error{nil},
+			mockUpdateOneError: &[]error{nil},
+			expectedRevision:   1,
+		},
+		{
+			name:           "game not found",
+			gameID:         "1",
+			playerID:       "2",
+			suit:           Clubs,
+			cards:          []CardName{ACE_CLUBS},
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{nil},
+			expectingError: true,
+		},
+		{
+			name:           "error thrown getting game",
+			gameID:         "1",
+			playerID:       "2",
+			suit:           Clubs,
+			cards:          []CardName{ACE_CLUBS},
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{false},
+			mockGetError:   &[]error{errors.New("something went wrong")},
+			expectingError: true,
+		},
+		{
+			name:           "error thrown getting game - true exists",
+			gameID:         "1",
+			playerID:       "2",
+			suit:           Clubs,
+			cards:          []CardName{ACE_CLUBS},
+			mockGetResult:  &[]Game{{}},
+			mockGetExists:  &[]bool{true},
+			mockGetError:   &[]error{errors.New("something went wrong")},
+			expectingError: true,
+		},
+		{
+			name:               "error thrown updating game",
+			gameID:             TwoPlayerGame().ID,
+			playerID:           "2",
+			suit:               Clubs,
+			cards:              []CardName{ACE_CLUBS},
+			mockGetResult:      &[]Game{TwoPlayerGame()},
+			mockGetError:       &[]error{nil},
+			mockGetExists:      &[]bool{true},
+			mockUpdateOneError: &[]error{errors.New("something went wrong")},
+			expectingError:     true,
+		},
+	}
+
+	for _, test := range tests {
+
+		t.Run(test.name, func(t *testing.T) {
+			mockCol := &db.MockCollection[Game]{
+				MockFindOneResult: test.mockGetResult,
+				MockFindOneExists: test.mockGetExists,
+				MockFindOneErr:    test.mockGetError,
+				MockUpdateOneErr:  test.mockUpdateOneError,
+			}
+
+			ds := &Service{
+				Col: mockCol,
+			}
+
+			game, err := ds.SelectSuit(ctx, test.gameID, test.playerID, test.suit, test.cards)
+
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				var player Player
+				for _, p := range game.Players {
+					if p.ID == test.playerID {
+						player = p
+						break
+					}
+				}
+				// Check suit has been selected
+				if player.ID == "" {
+					t.Errorf("Player not found")
+				}
+
+				if game.CurrentRound.Suit != test.suit {
+					t.Errorf("expected suit %v, got %v", test.suit, game.CurrentRound.Suit)
+				}
+				// Check revision has been incremented
+				if game.Revision != test.expectedRevision {
+					t.Errorf("expected revision %d, got %d", test.expectedRevision, game.Revision)
+				}
+			}
+		})
+	}
+}
