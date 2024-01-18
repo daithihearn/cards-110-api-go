@@ -129,6 +129,18 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 		return Game{}, err
 	}
 
+	// Verify the admin is in the list of players
+	adminFound := false
+	for _, playerID := range playerIDs {
+		if playerID == adminID {
+			adminFound = true
+			break
+		}
+	}
+	if !adminFound {
+		return Game{}, errors.New("admin not found in players")
+	}
+
 	// Randomise the order of the players
 	shuffledPlayerIDs := shuffle(playerIDs)
 
@@ -191,4 +203,12 @@ func containsAllUnique(referenceSlice, targetSlice []CardName) bool {
 		seenInTargetSlice[item] = true
 	}
 	return true
+}
+
+// compare checks if targetSlice and referenceSlice are equivalent
+func compare(referenceSlice, targetSlice []CardName) bool {
+	if len(referenceSlice) != len(targetSlice) {
+		return false
+	}
+	return containsAllUnique(referenceSlice, targetSlice)
 }

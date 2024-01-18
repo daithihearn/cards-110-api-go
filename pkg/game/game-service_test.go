@@ -12,19 +12,17 @@ func TestCreate(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name           string
-		inputPlayerIDs []string
-		inputName      string
-		inputAdminID   string
-		mockError      *[]error
-		expectingError bool
+		name            string
+		inputPlayerIDs  []string
+		inputAdminID    string
+		mockUpsertError *[]error
+		expectingError  bool
 	}{
 		{
-			name:           "simple create",
-			inputPlayerIDs: []string{"1", "2"},
-			inputName:      "test",
-			inputAdminID:   "1",
-			mockError:      &[]error{nil},
+			name:            "simple create",
+			inputPlayerIDs:  []string{"1", "2"},
+			inputAdminID:    "1",
+			mockUpsertError: &[]error{nil},
 		},
 		{
 			name: "duplicate player IDs",
@@ -32,9 +30,14 @@ func TestCreate(t *testing.T) {
 				"1",
 				"1",
 			},
-			inputName:      "test",
-			inputAdminID:   "1",
-			mockError:      &[]error{nil},
+			inputAdminID:    "1",
+			mockUpsertError: &[]error{nil},
+			expectingError:  true,
+		},
+		{
+			name:           "admin not in game",
+			inputPlayerIDs: []string{"1", "2"},
+			inputAdminID:   "3",
 			expectingError: true,
 		},
 		{
@@ -43,17 +46,16 @@ func TestCreate(t *testing.T) {
 				"1",
 				"2",
 			},
-			inputName:      "test",
-			inputAdminID:   "1",
-			mockError:      &[]error{errors.New("failed to upsert")},
-			expectingError: true,
+			inputAdminID:    "1",
+			mockUpsertError: &[]error{errors.New("failed to upsert")},
+			expectingError:  true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockCol := &db.MockCollection[Game]{
-				MockUpsertErr: test.mockError,
+				MockUpsertErr: test.mockUpsertError,
 			}
 
 			ds := &Service{
@@ -68,7 +70,7 @@ func TestCreate(t *testing.T) {
 				}
 			} else {
 				if result.Name != test.name {
-					t.Errorf("expected name %s, got %s", test.inputName, result.Name)
+					t.Errorf("expected name %s, got %s", test.name, result.Name)
 				}
 				if result.AdminID != test.inputAdminID {
 					t.Errorf("expected admin id %s, got %s", test.inputAdminID, result.AdminID)
