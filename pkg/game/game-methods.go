@@ -86,7 +86,10 @@ func (g *Game) EndRound() error {
 	}
 
 	// Deal the cards
-	deck, hands := DealCards(ShuffleCards(NewDeck()), len(g.Players))
+	deck, hands, err := DealCards(ShuffleCards(NewDeck()), len(g.Players))
+	if err != nil {
+		return err
+	}
 	var dummy []CardName
 	for i, hand := range hands {
 		if i >= len(g.Players) {
@@ -314,6 +317,76 @@ func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
 		return err
 	}
 	g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
+
+	// Increment revision
+	g.Revision++
+
+	return nil
+}
+
+func (g *Game) Buy(id string, cards []CardName) error {
+	// Verify the at the round is in the buying state
+	if g.CurrentRound.Status != Buying {
+		return fmt.Errorf("round must be in the buying state to buy cards")
+	}
+
+	// Verify that is the player's go
+	if g.CurrentRound.CurrentHand.CurrentPlayerID != id {
+		return fmt.Errorf("only the current player can buy cards")
+	}
+
+	// Verify the number of cards selected is valid (<=5 and >= minKeep)
+	minKeep, err := g.MinKeep()
+	if err != nil {
+		return err
+	}
+	if len(cards) > 5 || len(cards) < minKeep {
+		return fmt.Errorf("invalid number of cards selected")
+	}
+
+	// Verify the cards are valid (must be either in the player's hand or the dummy's hand and must be unique
+	state, err := g.GetState(id)
+	if err != nil {
+		return err
+	}
+	if !containsAllUnique(state.Cards, cards) {
+		return fmt.Errorf("invalid card selected")
+	}
+
+	// Get cards from the deck so the player has 5 cards
+	deck, cards, err := BuyCards(g.Deck, cards)
+	if err != nil {
+		return err
+	}
+
+	g.Deck = deck
+
+	// Set my cards
+	for i, p := range g.Players {
+		if p.ID == id {
+			g.Players[i].Cards = cards
+			break
+		}
+	}
+
+	// If the current player is the dealer update the round status to playing
+	if g.CurrentRound.DealerID == id {
+		g.CurrentRound.Status = Playing
+
+		// Set the next player when the dealer buys
+		np, err := nextPlayer(g.Players, g.CurrentRound.GoerID)
+		if err != nil {
+			return err
+		}
+		g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
+	} else {
+		// Set the next player
+		np, err := nextPlayer(g.Players, id)
+		if err != nil {
+			return err
+		}
+		g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
+	}
 
 	// Increment revision
 	g.Revision++

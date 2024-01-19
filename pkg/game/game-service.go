@@ -16,6 +16,7 @@ type ServiceI interface {
 	Delete(ctx context.Context, gameId string, adminId string) error
 	Call(ctx context.Context, gameId string, playerId string, call Call) (Game, error)
 	SelectSuit(ctx context.Context, id string, id2 string, suit Suit, cards []CardName) (Game, error)
+	Buy(ctx context.Context, id string, id2 string, cards []CardName) (Game, error)
 }
 
 type Service struct {
@@ -139,6 +140,31 @@ func (s *Service) SelectSuit(ctx context.Context, gameId string, playerID string
 
 	// Select the suit.
 	err = game.SelectSuit(playerID, suit, cards)
+	if err != nil {
+		return Game{}, err
+	}
+
+	// Save the game to the database.
+	err = s.Col.UpdateOne(ctx, game, game.ID)
+	if err != nil {
+		return Game{}, err
+	}
+	return game, nil
+}
+
+// Buy cards
+func (s *Service) Buy(ctx context.Context, gameId string, playerID string, cards []CardName) (Game, error) {
+	// Get the game from the database.
+	game, has, err := s.Get(ctx, gameId)
+	if err != nil {
+		return Game{}, err
+	}
+	if !has {
+		return Game{}, errors.New("game not found")
+	}
+
+	// Buy the cards.
+	err = game.Buy(playerID, cards)
 	if err != nil {
 		return Game{}, err
 	}

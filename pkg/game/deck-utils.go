@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -15,16 +16,34 @@ func ShuffleCards(cards []CardName) []CardName {
 	return shuffled
 }
 
-func DealCards(deck []CardName, numPlayers int) ([]CardName, [][]CardName) {
+func DealCards(deck []CardName, numPlayers int) ([]CardName, [][]CardName, error) {
 	hands := make([][]CardName, numPlayers+1)
 	// Deal the cards
 	for i := 0; i < 5; i++ {
 		for j := 0; j < numPlayers+1; j++ {
+			if len(deck) == 0 {
+				return nil, nil, fmt.Errorf("deck is empty")
+			}
 			hands[j] = append(hands[j], deck[0])
 			deck = deck[1:]
 		}
 	}
-	return deck, hands
+	return deck, hands, nil
+}
+
+func BuyCards(deck []CardName, cards []CardName) ([]CardName, []CardName, error) {
+	for {
+		if len(cards) == 5 {
+			break
+		}
+		if len(deck) == 0 {
+			return nil, nil, fmt.Errorf("deck is empty")
+		}
+
+		cards = append(cards, deck[0])
+		deck = deck[1:]
+	}
+	return deck, cards, nil
 }
 
 func NewDeck() []CardName {

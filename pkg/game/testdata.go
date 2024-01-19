@@ -233,6 +233,38 @@ func CalledGame() Game {
 	}
 }
 
+func BuyingGame(dealerId string) Game {
+	deck := NewDeck()
+
+	p1 := Player1()
+	p1.Cards = []CardName{deck[0], deck[1], deck[2], deck[3], deck[4]}
+	deck = deck[5:]
+	p2 := Player2()
+	p2.Cards = []CardName{deck[0], deck[1], deck[2], deck[3], deck[4]}
+	deck = deck[5:]
+	p3 := Player3()
+	p3.Cards = []CardName{deck[0], deck[1], deck[2], deck[3], deck[4]}
+	deck = deck[5:]
+
+	return Game{
+		ID:        "1",
+		Name:      "Test Game",
+		Status:    Active,
+		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Players:   []Player{p1, p2, p3},
+		CurrentRound: Round{
+			DealerID: dealerId,
+			GoerID:   "3",
+			Status:   Buying,
+			CurrentHand: Hand{
+				CurrentPlayerID: "2",
+			},
+		},
+		AdminID: "1",
+		Deck:    deck,
+	}
+}
+
 func CompletedGame() Game {
 	return Game{
 		ID:        "2",
