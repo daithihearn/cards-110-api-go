@@ -320,3 +320,54 @@ func (h *Handler) SelectSuit(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusOK, state)
 }
+
+type BuyRequest struct {
+	Cards []CardName `json:"cards"`
+}
+
+// Buy @Summary Buy cards
+// @Description When in the Buying state, the Goer can buy cards from the deck
+// @Tags Game
+// @ID buy
+// @Produce json
+// @Security Bearer
+// @Param gameId path string true "Game ID"
+// @Para body BuyRequest true "Buy Request"
+// @Success 200 {object} State
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
+// @Router /game/{gameId}/buy [put]
+func (h *Handler) Buy(c *gin.Context) {
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
+		return
+	}
+
+	// Get the context from the request
+	ctx := c.Request.Context()
+
+	// Get the game ID from the request
+	gameId := c.Param("gameId")
+
+	// Get the request body
+	var req BuyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	// Buy the cards
+	game, err := h.S.Buy(ctx, gameId, id, req.Cards)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	state, err := game.GetState(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, state)
+}

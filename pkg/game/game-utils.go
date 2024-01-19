@@ -155,7 +155,10 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 	round, err := createFirstRound(players, dealer)
 
 	// Deal the cards
-	deck, hands := DealCards(ShuffleCards(NewDeck()), len(players))
+	deck, hands, err := DealCards(ShuffleCards(NewDeck()), len(players))
+	if err != nil {
+		return Game{}, err
+	}
 	var dummy []CardName
 	for i, hand := range hands {
 		if i >= len(players) {

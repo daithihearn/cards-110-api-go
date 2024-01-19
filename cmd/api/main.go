@@ -131,6 +131,7 @@ func main() {
 	router.GET("/api/v1/game/:gameId/state", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetState)
 	router.PUT("/api/v1/game/:gameId/call", auth.EnsureValidTokenGin([]string{auth.WriteGame}), gameHandler.Call)
 	router.PUT("/api/v1/game/:gameId/suit", auth.EnsureValidTokenGin([]string{auth.WriteGame}), gameHandler.SelectSuit)
+	router.PUT("/api/v1/game/:gameId/buy", auth.EnsureValidTokenGin([]string{auth.WriteGame}), gameHandler.Buy)
 	router.GET("/api/v1/game/all", auth.EnsureValidTokenGin([]string{auth.ReadGame}), gameHandler.GetAll)
 	router.PUT("/api/v1/game", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Create)
 	router.DELETE("/api/v1/game/:gameId", auth.EnsureValidTokenGin([]string{auth.WriteAdmin}), gameHandler.Delete)

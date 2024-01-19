@@ -451,58 +451,101 @@ func TestGame_SelectSuit(t *testing.T) {
 	}
 }
 
-func TestGame_ParseCall(t *testing.T) {
+func TestGame_Buy(t *testing.T) {
 	tests := []struct {
-		name           string
-		callStr        string
-		expectedCall   Call
-		expectingError bool
+		name                 string
+		game                 Game
+		playerID             string
+		cards                []CardName
+		expectedStatus       RoundStatus
+		expectedRevision     int
+		expectedNextPlayerID string
+		expectingError       bool
 	}{
 		{
-			name:         "Valid call - 0",
-			callStr:      "0",
-			expectedCall: Pass,
+			name:                 "Valid selection - keep 1 from my hand",
+			game:                 BuyingGame("3"),
+			playerID:             "2",
+			cards:                []CardName{SEVEN_HEARTS},
+			expectedStatus:       Buying,
+			expectedRevision:     1,
+			expectedNextPlayerID: "3",
 		},
 		{
-			name:         "Valid call - 10",
-			callStr:      "10",
-			expectedCall: Ten,
+			name:                 "Valid selection - keep all 5",
+			game:                 BuyingGame("1"),
+			playerID:             "2",
+			cards:                []CardName{SEVEN_HEARTS, EIGHT_HEARTS, NINE_HEARTS, TEN_HEARTS, JACK_HEARTS},
+			expectedStatus:       Buying,
+			expectedRevision:     1,
+			expectedNextPlayerID: "3",
 		},
 		{
-			name:         "Valid call - 15",
-			callStr:      "15",
-			expectedCall: Fifteen,
+			name:                 "dealer buying should cause status change",
+			game:                 BuyingGame("2"),
+			playerID:             "2",
+			cards:                []CardName{SEVEN_HEARTS, EIGHT_HEARTS, NINE_HEARTS, TEN_HEARTS, JACK_HEARTS},
+			expectedStatus:       Playing,
+			expectedRevision:     1,
+			expectedNextPlayerID: "1",
 		},
 		{
-			name:         "Valid call - 20",
-			callStr:      "20",
-			expectedCall: Twenty,
+			name:             "Not current player",
+			game:             BuyingGame("3"),
+			playerID:         "1",
+			cards:            []CardName{TWO_HEARTS},
+			expectedRevision: 0,
+			expectingError:   true,
 		},
 		{
-			name:         "Valid call - 25",
-			callStr:      "25",
-			expectedCall: TwentyFive,
+			name:             "Valid selection - not keeping any cards",
+			game:             BuyingGame("3"),
+			playerID:         "2",
+			cards:            []CardName{},
+			expectedStatus:   Buying,
+			expectedRevision: 1,
 		},
 		{
-			name:         "Valid call - 30",
-			callStr:      "30",
-			expectedCall: Jink,
+			name:             "Invalid state",
+			game:             TwoPlayerGame(),
+			playerID:         "1",
+			cards:            []CardName{ACE_HEARTS},
+			expectedStatus:   Buying,
+			expectingError:   true,
+			expectedRevision: 0,
 		},
 		{
-			name:           "Invalid call - 5",
-			callStr:        "5",
-			expectingError: true,
+			name:             "Invalid number of cards",
+			game:             BuyingGame("3"),
+			playerID:         "2",
+			cards:            []CardName{ACE_SPADES, KING_SPADES, QUEEN_SPADES, JACK_SPADES, JOKER, ACE_DIAMONDS},
+			expectedStatus:   Buying,
+			expectingError:   true,
+			expectedRevision: 0,
 		},
 		{
-			name:           "Invalid call - 35",
-			callStr:        "35",
-			expectingError: true,
+			name:             "Invalid card - not in hand",
+			game:             BuyingGame("3"),
+			playerID:         "2",
+			cards:            []CardName{FIVE_CLUBS},
+			expectedStatus:   Buying,
+			expectingError:   true,
+			expectedRevision: 0,
+		},
+		{
+			name:             "Duplicate card",
+			game:             BuyingGame("3"),
+			playerID:         "2",
+			cards:            []CardName{ACE_DIAMONDS, ACE_DIAMONDS},
+			expectedStatus:   Buying,
+			expectingError:   true,
+			expectedRevision: 0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			call, err := ParseCall(test.callStr)
+			err := test.game.Buy(test.playerID, test.cards)
 			if test.expectingError {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -511,9 +554,28 @@ func TestGame_ParseCall(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no error, got %v", err)
 				}
-				if call != test.expectedCall {
-					t.Errorf("expected call to be %d, got %d", test.expectedCall, call)
+				if test.game.CurrentRound.Status != test.expectedStatus {
+					t.Errorf("expected round status to be %s, got %s", test.expectedStatus, test.game.CurrentRound.Status)
 				}
+				// Check that he has all of retained the cards he selected
+				state, err := test.game.GetState(test.playerID)
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if len(state.Cards) != 5 {
+					t.Errorf("expected player to have 5 cards, got %d", len(state.Cards))
+				}
+				if !containsAllUnique(state.Cards, test.cards) {
+					t.Errorf("expected player to have all of the selected cards %v, got %v", test.cards, state.Cards)
+				}
+				if test.expectedNextPlayerID != "" {
+					if test.game.CurrentRound.CurrentHand.CurrentPlayerID != test.expectedNextPlayerID {
+						t.Errorf("expected next player to be %s, got %s", test.expectedNextPlayerID, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
+					}
+				}
+			}
+			if test.game.Revision != test.expectedRevision {
+				t.Errorf("expected revision to be %d, got %d", test.expectedRevision, test.game.Revision)
 			}
 		})
 	}
