@@ -5,10 +5,10 @@ type Suit string
 
 const (
 	Empty    Suit = "EMPTY"
-	Clubs         = "CLUBS"
-	Diamonds      = "DIAMONDS"
-	Hearts        = "HEARTS"
-	Spades        = "SPADES"
+	Clubs         = "Clubs"
+	Diamonds      = "Diamonds"
+	Hearts        = "Hearts"
+	Spades        = "Spades"
 	Wild          = "WILD"
 )
 
@@ -71,6 +71,10 @@ const (
 	JOKER                   = "JOKER"
 )
 
+func (c CardName) Card() Card {
+	return ParseCard(c)
+}
+
 // Card represents a card with a value, coldValue, suit, and renegable status.
 type Card struct {
 	Name      CardName
@@ -82,60 +86,60 @@ type Card struct {
 
 // Define cards as constants.
 var (
-	EmptyCard     = Card{EMPTY_CARD, 0, 0, Empty, false}
-	TwoHearts     = Card{Name: TWO_HEARTS, Value: 2, ColdValue: 0, Suit: Hearts, Renegable: false}
-	ThreeHearts   = Card{THREE_HEARTS, 3, 0, Hearts, false}
-	FourHearts    = Card{FOUR_HEARTS, 4, 0, Hearts, false}
-	SixHearts     = Card{SIX_HEARTS, 6, 0, Hearts, false}
-	SevenHearts   = Card{SEVEN_HEARTS, 7, 0, Hearts, false}
-	EightHearts   = Card{EIGHT_HEARTS, 8, 0, Hearts, false}
-	NineHearts    = Card{NINE_HEARTS, 9, 0, Hearts, false}
-	TenHearts     = Card{TEN_HEARTS, 10, 0, Hearts, false}
-	QueenHearts   = Card{QUEEN_HEARTS, 12, 0, Hearts, false}
-	KingHearts    = Card{KING_HEARTS, 13, 0, Hearts, false}
-	AceHearts     = Card{ACE_HEARTS, 1, 0, Hearts, false}
-	JackHearts    = Card{JACK_HEARTS, 11, 0, Hearts, true}
-	FiveHearts    = Card{FIVE_HEARTS, 5, 0, Hearts, true}
-	TwoDiamonds   = Card{TWO_DIAMONDS, 2, 0, Diamonds, false}
-	ThreeDiamonds = Card{THREE_DIAMONDS, 3, 0, Diamonds, false}
-	FourDiamonds  = Card{FOUR_DIAMONDS, 4, 0, Diamonds, false}
-	SixDiamonds   = Card{SIX_DIAMONDS, 6, 0, Diamonds, false}
-	SevenDiamonds = Card{SEVEN_DIAMONDS, 7, 0, Diamonds, false}
-	EightDiamonds = Card{EIGHT_DIAMONDS, 8, 0, Diamonds, false}
-	NineDiamonds  = Card{NINE_DIAMONDS, 9, 0, Diamonds, false}
-	TenDiamonds   = Card{TEN_DIAMONDS, 10, 0, Diamonds, false}
-	QueenDiamonds = Card{QUEEN_DIAMONDS, 12, 0, Diamonds, false}
-	KingDiamonds  = Card{KING_DIAMONDS, 13, 0, Diamonds, false}
-	AceDiamonds   = Card{ACE_DIAMONDS, 1, 0, Diamonds, false}
-	JackDiamonds  = Card{JACK_DIAMONDS, 11, 0, Diamonds, true}
-	FiveDiamonds  = Card{FIVE_DIAMONDS, 5, 0, Diamonds, true}
-	TenClubs      = Card{TEN_CLUBS, 10, 0, Clubs, false}
-	NineClubs     = Card{NINE_CLUBS, 9, 0, Clubs, false}
-	EightClubs    = Card{EIGHT_CLUBS, 8, 0, Clubs, false}
-	SevenClubs    = Card{SEVEN_CLUBS, 7, 0, Clubs, false}
-	SixClubs      = Card{SIX_CLUBS, 6, 0, Clubs, false}
-	FourClubs     = Card{FOUR_CLUBS, 4, 0, Clubs, false}
-	ThreeClubs    = Card{THREE_CLUBS, 3, 0, Clubs, false}
-	TwoClubs      = Card{TWO_CLUBS, 2, 0, Clubs, false}
-	QueenClubs    = Card{QUEEN_CLUBS, 12, 0, Clubs, false}
-	KingClubs     = Card{KING_CLUBS, 13, 0, Clubs, false}
-	AceClubs      = Card{ACE_CLUBS, 1, 0, Clubs, false}
-	JackClubs     = Card{JACK_CLUBS, 11, 0, Clubs, true}
-	FiveClubs     = Card{FIVE_CLUBS, 5, 0, Clubs, true}
-	TenSpades     = Card{TEN_SPADES, 10, 0, Spades, false}
-	NineSpades    = Card{NINE_SPADES, 9, 0, Spades, false}
-	EightSpades   = Card{EIGHT_SPADES, 8, 0, Spades, false}
-	SevenSpades   = Card{SEVEN_SPADES, 7, 0, Spades, false}
-	SixSpades     = Card{SIX_SPADES, 6, 0, Spades, false}
-	FourSpades    = Card{FOUR_SPADES, 4, 0, Spades, false}
-	ThreeSpades   = Card{THREE_SPADES, 3, 0, Spades, false}
-	TwoSpades     = Card{TWO_SPADES, 2, 0, Spades, false}
-	QueenSpades   = Card{QUEEN_SPADES, 12, 0, Spades, false}
-	KingSpades    = Card{KING_SPADES, 13, 0, Spades, false}
-	AceSpades     = Card{ACE_SPADES, 1, 0, Spades, false}
-	JackSpades    = Card{JACK_SPADES, 11, 0, Spades, true}
-	FiveSpades    = Card{FIVE_SPADES, 5, 0, Spades, true}
-	Joker         = Card{JOKER, 0, 0, Wild, true}
+	EmptyCard     = Card{Name: EMPTY_CARD, Value: 0, ColdValue: 0, Suit: Empty, Renegable: false}
+	TwoHearts     = Card{Name: TWO_HEARTS, Value: 101, ColdValue: 2, Suit: Hearts, Renegable: false}
+	ThreeHearts   = Card{Name: THREE_HEARTS, Value: 102, ColdValue: 3, Suit: Hearts, Renegable: false}
+	FourHearts    = Card{Name: FOUR_HEARTS, Value: 103, ColdValue: 4, Suit: Hearts, Renegable: false}
+	FiveHearts    = Card{Name: FIVE_HEARTS, Value: 115, ColdValue: 5, Suit: Hearts, Renegable: true}
+	SixHearts     = Card{Name: SIX_HEARTS, Value: 104, ColdValue: 6, Suit: Hearts, Renegable: false}
+	SevenHearts   = Card{Name: SEVEN_HEARTS, Value: 105, ColdValue: 7, Suit: Hearts, Renegable: false}
+	EightHearts   = Card{Name: EIGHT_HEARTS, Value: 106, ColdValue: 8, Suit: Hearts, Renegable: false}
+	NineHearts    = Card{Name: NINE_HEARTS, Value: 107, ColdValue: 9, Suit: Hearts, Renegable: false}
+	TenHearts     = Card{Name: TEN_HEARTS, Value: 108, ColdValue: 10, Suit: Hearts, Renegable: false}
+	JackHearts    = Card{Name: JACK_HEARTS, Value: 114, ColdValue: 11, Suit: Hearts, Renegable: true}
+	QueenHearts   = Card{Name: QUEEN_HEARTS, Value: 109, ColdValue: 12, Suit: Hearts, Renegable: false}
+	KingHearts    = Card{Name: KING_HEARTS, Value: 110, ColdValue: 13, Suit: Hearts, Renegable: false}
+	AceHearts     = Card{Name: ACE_HEARTS, Value: 112, ColdValue: 0, Suit: Wild, Renegable: true}
+	TwoDiamonds   = Card{Name: TWO_DIAMONDS, Value: 101, ColdValue: 2, Suit: Diamonds, Renegable: false}
+	ThreeDiamonds = Card{Name: THREE_DIAMONDS, Value: 102, ColdValue: 3, Suit: Diamonds, Renegable: false}
+	FourDiamonds  = Card{Name: FOUR_DIAMONDS, Value: 103, ColdValue: 4, Suit: Diamonds, Renegable: false}
+	FiveDiamonds  = Card{Name: FIVE_DIAMONDS, Value: 115, ColdValue: 5, Suit: Diamonds, Renegable: true}
+	SixDiamonds   = Card{Name: SIX_DIAMONDS, Value: 104, ColdValue: 6, Suit: Diamonds, Renegable: false}
+	SevenDiamonds = Card{Name: SEVEN_DIAMONDS, Value: 105, ColdValue: 7, Suit: Diamonds, Renegable: false}
+	EightDiamonds = Card{Name: EIGHT_DIAMONDS, Value: 106, ColdValue: 8, Suit: Diamonds, Renegable: false}
+	NineDiamonds  = Card{Name: NINE_DIAMONDS, Value: 107, ColdValue: 9, Suit: Diamonds, Renegable: false}
+	TenDiamonds   = Card{Name: TEN_DIAMONDS, Value: 108, ColdValue: 10, Suit: Diamonds, Renegable: false}
+	JackDiamonds  = Card{Name: JACK_DIAMONDS, Value: 114, ColdValue: 11, Suit: Diamonds, Renegable: true}
+	QueenDiamonds = Card{Name: QUEEN_DIAMONDS, Value: 109, ColdValue: 12, Suit: Diamonds, Renegable: false}
+	KingDiamonds  = Card{Name: KING_DIAMONDS, Value: 110, ColdValue: 13, Suit: Diamonds, Renegable: false}
+	AceDiamonds   = Card{Name: ACE_DIAMONDS, Value: 111, ColdValue: 1, Suit: Diamonds, Renegable: false}
+	TwoClubs      = Card{Name: TWO_CLUBS, Value: 108, ColdValue: 9, Suit: Clubs, Renegable: false}
+	ThreeClubs    = Card{Name: THREE_CLUBS, Value: 107, ColdValue: 8, Suit: Clubs, Renegable: false}
+	FourClubs     = Card{Name: FOUR_CLUBS, Value: 106, ColdValue: 7, Suit: Clubs, Renegable: false}
+	FiveClubs     = Card{Name: FIVE_CLUBS, Value: 115, ColdValue: 6, Suit: Clubs, Renegable: true}
+	SixClubs      = Card{Name: SIX_CLUBS, Value: 105, ColdValue: 5, Suit: Clubs, Renegable: false}
+	SevenClubs    = Card{Name: SEVEN_CLUBS, Value: 104, ColdValue: 4, Suit: Clubs, Renegable: false}
+	EightClubs    = Card{Name: EIGHT_CLUBS, Value: 103, ColdValue: 3, Suit: Clubs, Renegable: false}
+	NineClubs     = Card{Name: NINE_CLUBS, Value: 102, ColdValue: 2, Suit: Clubs, Renegable: false}
+	TenClubs      = Card{Name: TEN_CLUBS, Value: 101, ColdValue: 1, Suit: Clubs, Renegable: false}
+	JackClubs     = Card{Name: JACK_CLUBS, Value: 114, ColdValue: 11, Suit: Clubs, Renegable: true}
+	QueenClubs    = Card{Name: QUEEN_CLUBS, Value: 109, ColdValue: 12, Suit: Clubs, Renegable: false}
+	KingClubs     = Card{Name: KING_CLUBS, Value: 110, ColdValue: 13, Suit: Clubs, Renegable: false}
+	AceClubs      = Card{Name: ACE_CLUBS, Value: 111, ColdValue: 10, Suit: Clubs, Renegable: false}
+	TwoSpades     = Card{Name: TWO_SPADES, Value: 108, ColdValue: 9, Suit: Spades, Renegable: false}
+	ThreeSpades   = Card{Name: THREE_SPADES, Value: 107, ColdValue: 8, Suit: Spades, Renegable: false}
+	FourSpades    = Card{Name: FOUR_SPADES, Value: 106, ColdValue: 7, Suit: Spades, Renegable: false}
+	FiveSpades    = Card{Name: FIVE_SPADES, Value: 115, ColdValue: 6, Suit: Spades, Renegable: true}
+	SixSpades     = Card{Name: SIX_SPADES, Value: 105, ColdValue: 5, Suit: Spades, Renegable: false}
+	SevenSpades   = Card{Name: SEVEN_SPADES, Value: 104, ColdValue: 4, Suit: Spades, Renegable: false}
+	EightSpades   = Card{Name: EIGHT_SPADES, Value: 103, ColdValue: 3, Suit: Spades, Renegable: false}
+	NineSpades    = Card{Name: NINE_SPADES, Value: 102, ColdValue: 2, Suit: Spades, Renegable: false}
+	TenSpades     = Card{Name: TEN_SPADES, Value: 101, ColdValue: 1, Suit: Spades, Renegable: false}
+	JackSpades    = Card{Name: JACK_SPADES, Value: 114, ColdValue: 11, Suit: Spades, Renegable: true}
+	QueenSpades   = Card{Name: QUEEN_SPADES, Value: 109, ColdValue: 12, Suit: Spades, Renegable: false}
+	KingSpades    = Card{Name: KING_SPADES, Value: 110, ColdValue: 13, Suit: Spades, Renegable: false}
+	AceSpades     = Card{Name: ACE_SPADES, Value: 111, ColdValue: 10, Suit: Spades, Renegable: false}
+	Joker         = Card{Name: JOKER, Value: 113, ColdValue: 0, Suit: Wild, Renegable: true}
 )
 
 func (c Card) String() string {

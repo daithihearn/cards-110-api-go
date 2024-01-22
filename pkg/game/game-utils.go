@@ -170,7 +170,7 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 
 	// Create the game
 	game := Game{
-		ID:           "game-" + strconv.Itoa(rand.Intn(1000000)),
+		ID:           strconv.Itoa(rand.Intn(10000000)),
 		Timestamp:    time.Now(),
 		Name:         name,
 		Status:       Active,
@@ -208,10 +208,312 @@ func containsAllUnique(referenceSlice, targetSlice []CardName) bool {
 	return true
 }
 
+func contains(referenceSlice []CardName, target CardName) bool {
+	for _, item := range referenceSlice {
+		if item == target {
+			return true
+		}
+	}
+	return false
+}
+
 // compare checks if targetSlice and referenceSlice are equivalent
 func compare(referenceSlice, targetSlice []CardName) bool {
 	if len(referenceSlice) != len(targetSlice) {
 		return false
 	}
 	return containsAllUnique(referenceSlice, targetSlice)
+}
+
+func canRenage(leadOut Card, myTrumps []Card) bool {
+	for _, trump := range myTrumps {
+		if !trump.Renegable || trump.Value <= leadOut.Value {
+			return false
+		}
+	}
+	return true
+}
+
+func isFollowing(myCard CardName, myCards []CardName, currentHand Hand, suit Suit) bool {
+	mySuit := myCard.Card().Suit
+	leadOut := currentHand.LeadOut.Card()
+	suitLead := leadOut.Suit == suit || leadOut.Suit == Wild
+
+	if suitLead {
+		var myTrumps []Card
+		for _, card := range myCards {
+			if mySuit == suit || mySuit == Wild {
+				myTrumps = append(myTrumps, card.Card())
+			}
+		}
+
+		return len(myTrumps) == 0 ||
+			mySuit == suit ||
+			mySuit == Wild ||
+			canRenage(leadOut, myTrumps)
+	}
+
+	var mySuitedCards []Card
+	for _, card := range myCards {
+		if mySuit == leadOut.Suit {
+			mySuitedCards = append(mySuitedCards, card.Card())
+		}
+	}
+
+	return len(mySuitedCards) == 0 ||
+		mySuit == suit ||
+		mySuit == Wild ||
+		mySuit == leadOut.Suit
+}
+
+func determineWinner(hand Hand, suit Suit) (PlayedCard, error) {
+	// Get active suit
+	activeSuit := getActiveSuit(hand, suit)
+
+	// Find the winning card
+	return findWinningCard(hand.PlayedCards, suit, activeSuit)
+}
+
+// getActiveSuit Was a suit or wild card played? If not set the lead out card as the suit
+func getActiveSuit(hand Hand, suit Suit) Suit {
+	// If a trump was played, the active suit is the trump suit
+	for _, playedCard := range hand.PlayedCards {
+		if playedCard.Card.Card().Suit == suit || playedCard.Card.Card().Suit == Wild {
+			return suit
+		}
+	}
+
+	return hand.LeadOut.Card().Suit
+}
+
+func findWinningCard(playedCards []PlayedCard, suit Suit, activeSuit Suit) (PlayedCard, error) {
+	if len(playedCards) == 0 {
+		return PlayedCard{}, errors.New("no cards played")
+	}
+	winningCard := playedCards[0]
+	for i, playedCard := range playedCards {
+		if i == 0 {
+			continue
+		}
+		card := playedCard.Card.Card()
+		if suit == activeSuit {
+			// A trump card was played
+			if card.Value > winningCard.Card.Card().Value {
+				winningCard = playedCard
+			}
+		} else {
+			// A cold card will win as no trump was played
+			if card.Suit == activeSuit {
+				if card.ColdValue > winningCard.Card.Card().ColdValue {
+					winningCard = playedCard
+				}
+			}
+		}
+	}
+	return winningCard, nil
+}
+
+func findBestTrump(cards []PlayedCard, suit Suit) (PlayedCard, bool, error) {
+	if len(cards) == 0 {
+		return PlayedCard{}, false, errors.New("no cards played")
+	}
+
+	// 1. Verify at least one trump was played
+	trumpPlayed := false
+	for _, playedCard := range cards {
+		if playedCard.Card.Card().Suit == suit || playedCard.Card.Card().Suit == Wild {
+			trumpPlayed = true
+			break
+		}
+	}
+
+	if !trumpPlayed {
+		return PlayedCard{}, false, nil
+	}
+
+	// 2. Get the best card
+	var winningCard PlayedCard
+	for _, c := range cards {
+		card := c.Card.Card()
+		if (card.Suit == suit || card.Suit == Wild) && (winningCard.Card == "" || card.Value > winningCard.Card.Card().Value) {
+			winningCard = c
+		}
+	}
+	return winningCard, true, nil
+}
+
+func findWinningCardsForRound(round Round) ([]PlayedCard, error) {
+	if round.Suit == "" {
+		return nil, errors.New("suit not set")
+	}
+	winningCards := make([]PlayedCard, 5)
+	if len(round.CompletedHands) != 5 {
+		return nil, errors.New("round not complete")
+	}
+
+	for i, hand := range round.CompletedHands {
+		winningCard, err := determineWinner(hand, round.Suit)
+		if err != nil {
+			return nil, err
+		}
+		winningCards[i] = winningCard
+	}
+
+	return winningCards, nil
+}
+
+func findPlayer(playerID string, players []Player) (Player, error) {
+	for _, player := range players {
+		if player.ID == playerID {
+			return player, nil
+		}
+	}
+	return Player{}, errors.New("player not found")
+}
+
+func getTeamID(playerID string, players []Player) (string, error) {
+	for _, player := range players {
+		if player.ID == playerID {
+			return player.TeamID, nil
+		}
+	}
+	return "", errors.New("player not found")
+}
+
+func checkForJink(winningCards []PlayedCard, players []Player, goerId string) (bool, error) {
+	goingTeam, err := getTeamID(goerId, players)
+	if err != nil {
+		return false, err
+	}
+	if len(winningCards) != 5 {
+		return false, errors.New("invalid number of winning cards")
+	}
+	// Jink is only valid if there are more than 2 players
+	if len(players) < 3 {
+		return false, nil
+	}
+
+	for _, winningCard := range winningCards {
+		teamID, err := getTeamID(winningCard.PlayerID, players)
+		if err != nil {
+			return false, err
+		}
+		if teamID != goingTeam {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func findWinningTeam(players []Player, round Round) (string, error) {
+	// 1. If only one team >= 110 -> they are the winner
+	winningTeams := getTeamsOver110(players)
+	if len(winningTeams) == 1 {
+		for teamID := range winningTeams {
+			return teamID, nil
+		}
+	}
+
+	// 2. If more than one team >= 110 but one is the goer -> the goer is the winning team
+	goerTeamID := ""
+	for _, player := range players {
+		if player.ID == round.GoerID {
+			goerTeamID = player.TeamID
+			break
+		}
+	}
+	if winningTeams[goerTeamID] {
+		return goerTeamID, nil
+	}
+
+	// 3. Else first team >= 110 is the winner
+	return findFirstTeamToPass110(players, round)
+}
+
+func getTeamsOver110(players []Player) map[string]bool {
+	teamsOver110 := make(map[string]bool)
+	for _, player := range players {
+		if player.Score >= 110 {
+			teamsOver110[player.TeamID] = true
+		}
+	}
+	return teamsOver110
+}
+
+func findFirstTeamToPass110(players []Player, round Round) (string, error) {
+	winningCards, err := findWinningCardsForRound(round)
+	if err != nil {
+		return "", err
+	}
+
+	bestTrump, trumpPlayed, err := findBestTrump(winningCards, round.Suit)
+	if err != nil {
+		return "", err
+	}
+
+	// Go backwards through the hands and find the first team to pass 110
+	for i := len(winningCards) - 1; i >= 0; i-- {
+		card := winningCards[i]
+		if err != nil {
+			return "", err
+		}
+		teamID, err := getTeamID(card.PlayerID, players)
+		if err != nil {
+			return "", err
+		}
+
+		for j, p := range players {
+			if p.TeamID == teamID {
+				if trumpPlayed && bestTrump.Card == card.Card {
+					players[j].Score -= 10
+				} else {
+					players[j].Score -= 5
+				}
+			}
+		}
+		winningTeams := getTeamsOver110(players)
+		if len(winningTeams) == 1 {
+			for t := range winningTeams {
+				return t, nil
+			}
+		}
+	}
+
+	return "", errors.New("no winning team found")
+}
+
+func calculateScores(winningCards []PlayedCard, players []Player, suit Suit) (map[string]int, error) {
+	// 1. Get the best card
+	bestCard, trumpPlayed, err := findBestTrump(winningCards, suit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate the scores per player
+	scoresPlayer := make(map[string]int)
+	for _, winningCard := range winningCards {
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range players {
+			if p.ID == winningCard.PlayerID {
+				if trumpPlayed && winningCard.Card == bestCard.Card {
+					scoresPlayer[p.ID] += 10
+				} else {
+					scoresPlayer[p.ID] += 5
+				}
+			}
+		}
+	}
+
+	// Aggregate the scores per team
+	scoresTeam := make(map[string]int)
+	for playerID, score := range scoresPlayer {
+		teamID, err := getTeamID(playerID, players)
+		if err != nil {
+			return nil, err
+		}
+		scoresTeam[teamID] += score
+	}
+	return scoresTeam, nil
 }

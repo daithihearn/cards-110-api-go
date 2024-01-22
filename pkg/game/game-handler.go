@@ -371,3 +371,56 @@ func (h *Handler) Buy(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusOK, state)
 }
+
+// Play @Summary Play a card
+// @Description When in the Playing state, the current player can play a card
+// @Tags Game
+// @ID play
+// @Produce json
+// @Security Bearer
+// @Param gameId path string true "Game ID"
+// @Param card query string true "Card"
+// @Success 200 {object} State
+// @Failure 400 {object} api.ErrorResponse
+// @Failure 500 {object} api.ErrorResponse
+// @Router /game/{gameId}/play [put]
+func (h *Handler) Play(c *gin.Context) {
+	// Check the user is correctly authenticated
+	id, ok := auth.CheckValidated(c)
+	if !ok {
+		return
+	}
+
+	// Get the context from the request
+	ctx := c.Request.Context()
+
+	// Get the game ID from the request
+	gameId := c.Param("gameId")
+
+	// Get the card from the request
+	card, exists := c.GetQuery("card")
+	if !exists {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "Missing card"})
+		return
+	}
+	// Check if is a valid card
+	cn, err := ParseCardName(card)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	// Play the card
+	game, err := h.S.Play(ctx, gameId, id, cn)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	state, err := game.GetState(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, state)
+}
