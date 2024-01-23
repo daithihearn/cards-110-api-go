@@ -2,6 +2,692 @@ package game
 
 import "testing"
 
+func TestGame_Me(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		playerID       string
+		expectedPlayer Player
+		expectingError bool
+	}{
+		{
+			name:           "Player exists",
+			game:           TwoPlayerGame(),
+			playerID:       "1",
+			expectedPlayer: TwoPlayerGame().Players[0],
+		},
+		{
+			name:           "Player does not exist",
+			game:           TwoPlayerGame(),
+			playerID:       "3",
+			expectingError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			player, err := test.game.Me(test.playerID)
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if player.ID != test.expectedPlayer.ID {
+					t.Errorf("expected player ID to be %s, got %s", test.expectedPlayer.ID, player.ID)
+				}
+				if player.Seat != test.expectedPlayer.Seat {
+					t.Errorf("expected player seat to be %d, got %d", test.expectedPlayer.Seat, player.Seat)
+				}
+				if !compare(player.Cards, test.expectedPlayer.Cards) {
+					t.Errorf("expected player cards to be %v, got %v", test.expectedPlayer.Cards, player.Cards)
+				}
+				if player.Call != test.expectedPlayer.Call {
+					t.Errorf("expected player call to be %d, got %d", test.expectedPlayer.Call, player.Call)
+				}
+				if player.Score != test.expectedPlayer.Score {
+					t.Errorf("expected player score to be %d, got %d", test.expectedPlayer.Score, player.Score)
+				}
+				if player.Rings != test.expectedPlayer.Rings {
+					t.Errorf("expected player rings to be %d, got %d", test.expectedPlayer.Rings, player.Rings)
+				}
+				if player.TeamID != test.expectedPlayer.TeamID {
+					t.Errorf("expected player team ID to be %s, got %s", test.expectedPlayer.TeamID, player.TeamID)
+				}
+				if player.Winner != test.expectedPlayer.Winner {
+					t.Errorf("expected player winner to be %t, got %t", test.expectedPlayer.Winner, player.Winner)
+				}
+			}
+		})
+	}
+}
+
+func TestGame_GetState(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		playerID       string
+		expectedState  State
+		expectingError bool
+	}{
+		{
+			name:     "Player exists",
+			game:     TwoPlayerGame(),
+			playerID: "1",
+			expectedState: State{
+				ID:       TwoPlayerGame().ID,
+				Revision: TwoPlayerGame().Revision,
+				Me:       TwoPlayerGame().Players[0], Cards: TwoPlayerGame().Players[0].Cards,
+				IamDealer: true, IamGoer: false,
+				IamSpectator: false, IsMyGo: false,
+				Status:  TwoPlayerGame().Status,
+				MaxCall: 0,
+				Players: TwoPlayerGame().Players,
+				Round:   TwoPlayerGame().CurrentRound,
+			},
+		},
+		{
+			name:           "Player does not exist",
+			game:           TwoPlayerGame(),
+			playerID:       "3",
+			expectingError: true,
+		},
+		{
+			name:     "Game in Called state",
+			game:     CalledGameFivePlayers(),
+			playerID: "2",
+			expectedState: State{
+				ID:           CalledGameFivePlayers().ID,
+				Revision:     CalledGameFivePlayers().Revision,
+				Me:           CalledGameFivePlayers().Players[1],
+				Cards:        CalledGameFivePlayers().Players[1].Cards,
+				IamDealer:    false,
+				IamGoer:      false,
+				IamSpectator: false,
+				IsMyGo:       false,
+				Status:       CalledGameFivePlayers().Status,
+				MaxCall:      20,
+				Players:      CalledGameFivePlayers().Players,
+				Round:        CalledGameFivePlayers().CurrentRound,
+			},
+		},
+		{
+			name:     "Game in Buying state",
+			game:     BuyingGame("3"),
+			playerID: "2",
+			expectedState: State{
+				ID:           BuyingGame("3").ID,
+				Revision:     BuyingGame("3").Revision,
+				Me:           BuyingGame("3").Players[1],
+				Cards:        BuyingGame("3").Players[1].Cards,
+				IamDealer:    false,
+				IamGoer:      false,
+				IamSpectator: false,
+				IsMyGo:       true,
+				Status:       BuyingGame("3").Status,
+				MaxCall:      20,
+				Players:      BuyingGame("3").Players,
+				Round:        BuyingGame("3").CurrentRound,
+			},
+		},
+		{
+			name:     "Game in Playing state",
+			game:     PlayingGame_RoundStart("3"),
+			playerID: "PlayerCalled",
+			expectedState: State{
+				ID:           PlayingGame_RoundStart("3").ID,
+				Revision:     PlayingGame_RoundStart("3").Revision,
+				Me:           PlayingGame_RoundStart("3").Players[3],
+				Cards:        PlayingGame_RoundStart("3").Players[3].Cards,
+				IamDealer:    false,
+				IamGoer:      true,
+				IamSpectator: false,
+				IsMyGo:       false,
+				Status:       PlayingGame_RoundStart("3").Status,
+				MaxCall:      20,
+				Players:      PlayingGame_RoundStart("3").Players,
+				Round:        PlayingGame_RoundStart("3").CurrentRound,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			state, err := test.game.GetState(test.playerID)
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if state.ID != test.expectedState.ID {
+					t.Errorf("expected game ID to be %s, got %s", test.expectedState.ID, state.ID)
+				}
+				if state.Revision != test.expectedState.Revision {
+					t.Errorf("expected game revision to be %d, got %d", test.expectedState.Revision, state.Revision)
+				}
+				if state.Status != test.expectedState.Status {
+					t.Errorf("expected game status to be %s, got %s", test.expectedState.Status, state.Status)
+				}
+				if state.Me.ID != test.expectedState.Me.ID {
+					t.Errorf("expected player ID to be %s, got %s", test.expectedState.Me.ID, state.Me.ID)
+				}
+				if state.Me.Seat != test.expectedState.Me.Seat {
+					t.Errorf("expected player seat to be %d, got %d", test.expectedState.Me.Seat, state.Me.Seat)
+				}
+				if !compare(state.Me.Cards, test.expectedState.Me.Cards) {
+					t.Errorf("expected player cards to be %v, got %v", test.expectedState.Me.Cards, state.Me.Cards)
+				}
+				if state.Me.Call != test.expectedState.Me.Call {
+					t.Errorf("expected player call to be %d, got %d", test.expectedState.Me.Call, state.Me.Call)
+				}
+				if state.Me.Score != test.expectedState.Me.Score {
+					t.Errorf("expected player score to be %d, got %d", test.expectedState.Me.Score, state.Me.Score)
+				}
+				if state.Me.Rings != test.expectedState.Me.Rings {
+					t.Errorf("expected player rings to be %d, got %d", test.expectedState.Me.Rings, state.Me.Rings)
+				}
+				if state.Me.TeamID != test.expectedState.Me.TeamID {
+					t.Errorf("expected player team ID to be %s, got %s", test.expectedState.Me.TeamID, state.Me.TeamID)
+				}
+				if state.Me.Winner != test.expectedState.Me.Winner {
+					t.Errorf("expected player winner to be %t, got %t", test.expectedState.Me.Winner, state.Me.Winner)
+				}
+				if state.IamDealer != test.expectedState.IamDealer {
+					t.Errorf("expected IamDealer to be %t, got %t", test.expectedState.IamDealer, state.IamDealer)
+				}
+				if state.IamGoer != test.expectedState.IamGoer {
+					t.Errorf("expected IamGoer to be %t, got %t", test.expectedState.IamGoer, state.IamGoer)
+				}
+				if state.IamSpectator != test.expectedState.IamSpectator {
+					t.Errorf("expected IamSpectator to be %t, got %t", test.expectedState.IamSpectator, state.IamSpectator)
+				}
+				if state.IsMyGo != test.expectedState.IsMyGo {
+					t.Errorf("expected IsMyGo to be %t, got %t", test.expectedState.IsMyGo, state.IsMyGo)
+				}
+				if state.MaxCall != test.expectedState.MaxCall {
+					t.Errorf("expected MaxCall to be %d, got %d", test.expectedState.MaxCall, state.MaxCall)
+				}
+				if state.Round.Number != test.expectedState.Round.Number {
+					t.Errorf("expected Round Number to be %d, got %d", test.expectedState.Round.Number, state.Round.Number)
+				}
+			}
+		})
+	}
+}
+
+func TestGame_MinKeep(t *testing.T) {
+	tests := []struct {
+		name            string
+		game            Game
+		expectedMinKeep int
+		errorExpected   bool
+	}{
+		{
+			name:            "2 player game",
+			game:            TwoPlayerGame(),
+			expectedMinKeep: 0,
+		},
+		{
+			name:            "3 player game",
+			game:            ThreePlayerGame(),
+			expectedMinKeep: 0,
+		},
+		{
+			name:            "4 player game",
+			game:            FourPlayerGame(),
+			expectedMinKeep: 0,
+		},
+		{
+			name:            "5 player game",
+			game:            FivePlayerGame(),
+			expectedMinKeep: 1,
+		},
+		{
+			name:            "6 player game",
+			game:            SixPlayerGame(),
+			expectedMinKeep: 2,
+		},
+		{
+			name:          "Invalid number of players - 1",
+			game:          OnePlayerGame(),
+			errorExpected: true,
+		},
+		{
+			name:          "Invalid number of players - 7",
+			game:          SevenPlayerGame(),
+			errorExpected: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			minKeep, err := test.game.MinKeep()
+			if test.errorExpected {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if minKeep != test.expectedMinKeep {
+					t.Errorf("expected minKeep to be %d, got %d", test.expectedMinKeep, minKeep)
+				}
+			}
+		})
+	}
+}
+
+func TestGame_completeHand(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		nextPlayer     string
+		completedHands int
+		expectingError bool
+	}{
+		{
+			name:           "No cards played",
+			game:           PlayingGame_RoundStart("2"),
+			expectingError: true,
+		},
+		{
+			name:           "First hand completed",
+			game:           PlayingGame_Hand1Complete("2"),
+			completedHands: 1,
+			nextPlayer:     "3",
+		},
+		{
+			name:           "Final hand completed",
+			game:           PlayingGame_FinalHandComplete("1"),
+			completedHands: 5,
+			nextPlayer:     "3",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.completeHand()
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if test.game.CurrentRound.CurrentHand.CurrentPlayerID != test.nextPlayer {
+					t.Errorf("expected current player to be %s, got %s", test.nextPlayer, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
+				}
+				if len(test.game.CurrentRound.CurrentHand.PlayedCards) != 0 {
+					t.Errorf("expected played cards to be empty, got %v", test.game.CurrentRound.CurrentHand.PlayedCards)
+				}
+				if len(test.game.CurrentRound.CompletedHands) != test.completedHands {
+					t.Errorf("expected completed hands to be %d, got %d", test.completedHands, len(test.game.CurrentRound.CompletedHands))
+				}
+			}
+		})
+	}
+}
+
+func TestGame_completeRound(t *testing.T) {
+	tests := []struct {
+		name                string
+		game                Game
+		expectedRoundNumber int
+		nextDealer          string
+		nextPlayer          string
+		expectingError      bool
+	}{
+		{
+			name:           "Round not complete",
+			game:           PlayingGame_RoundStart("2"),
+			expectingError: true,
+		},
+		{
+			name:                "Round complete",
+			game:                PlayingGame_AllHandsComplete("1"),
+			expectedRoundNumber: 2,
+			nextDealer:          "2",
+			nextPlayer:          "3",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.completeRound()
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if test.game.Status != Active {
+					t.Errorf("expected game status to be %s, got %s", Active, test.game.Status)
+				}
+				if len(test.game.CurrentRound.CompletedHands) != 0 {
+					t.Errorf("expected completed hands to be 0, got %d", len(test.game.CurrentRound.CompletedHands))
+				}
+				if test.game.CurrentRound.Number != test.expectedRoundNumber {
+					t.Errorf("expected round number to be %d, got %d", test.expectedRoundNumber, test.game.CurrentRound.Number)
+				}
+				// All players should have 5 cards and no call
+				for _, player := range test.game.Players {
+					if len(player.Cards) != 5 {
+						t.Errorf("expected player %s to have 5 cards, got %d", player.ID, len(player.Cards))
+					}
+					if player.Call != Pass {
+						t.Errorf("expected player %s to have call %d, got %d", player.ID, Pass, player.Call)
+					}
+				}
+				// Dummy should have 5 cards
+				if len(test.game.Dummy) != 5 {
+					t.Errorf("expected dummy to have 5 cards, got %d", len(test.game.Dummy))
+				}
+				// Round status should be calling
+				if test.game.CurrentRound.Status != Calling {
+					t.Errorf("expected round status to be %s, got %s", Calling, test.game.CurrentRound.Status)
+				}
+				// Dealer should have changed
+				if test.game.CurrentRound.DealerID != test.nextDealer {
+					t.Errorf("expected dealer to be %s, got %s", test.nextDealer, test.game.CurrentRound.DealerID)
+				}
+				// Current player should have changed
+				if test.game.CurrentRound.CurrentHand.CurrentPlayerID != test.nextPlayer {
+					t.Errorf("expected current player to be %s, got %s", test.nextPlayer, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
+				}
+			}
+		})
+	}
+
+}
+
+func TestGame_completeGame(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		winningTeam    string
+		expectingError bool
+	}{
+		{
+			name:        "Game complete",
+			game:        CompletedGame(),
+			winningTeam: "1",
+		},
+		{
+			name:           "Game not complete - calling",
+			game:           TwoPlayerGame(),
+			expectingError: true,
+		},
+		{
+			name:           "Game not complete - buying",
+			game:           BuyingGame("1"),
+			expectingError: true,
+		},
+		{
+			name:           "Game not complete - playing",
+			game:           PlayingGame_RoundStart("1"),
+			expectingError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.completeGame()
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if test.game.Status != Completed {
+					t.Errorf("expected game status to be %s, got %s", Completed, test.game.Status)
+				}
+				for _, player := range test.game.Players {
+					if player.TeamID == test.winningTeam {
+						if !player.Winner {
+							t.Errorf("expected player %s to be a winner", player.ID)
+						}
+					} else {
+						if player.Winner {
+							t.Errorf("expected player %s to not be a winner", player.ID)
+						}
+					}
+				}
+			}
+		})
+
+	}
+}
+
+func TestGame_applyScores(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		expectedScores []Player
+		expectingError bool
+	}{
+		{
+			name: "Caller doesn't make contract",
+			game: PlayingGame_AllHandsComplete("1"),
+			expectedScores: []Player{
+				{
+					ID:     "1",
+					Score:  10,
+					Rings:  0,
+					TeamID: "1",
+				},
+				{
+					ID:     "2",
+					Score:  5,
+					Rings:  0,
+					TeamID: "2",
+				},
+				{
+					ID:     "3",
+					Score:  15,
+					Rings:  0,
+					TeamID: "3",
+				},
+				{
+					ID:     "PlayerCalled",
+					Score:  -20,
+					Rings:  1,
+					TeamID: "PlayerCalled",
+				},
+			},
+		},
+		{
+			name: "Caller doesn't make contract - doubles",
+			game: PlayingGame_DoesntMakeContract_Doubles(),
+			expectedScores: []Player{
+				{
+					ID:     "1",
+					Score:  15,
+					Rings:  0,
+					TeamID: "1",
+				},
+				{
+					ID:     "2",
+					Score:  0,
+					Rings:  0,
+					TeamID: "2",
+				},
+				{
+					ID:     "3",
+					Score:  -25,
+					Rings:  1,
+					TeamID: "3",
+				},
+				{
+					ID:     "4",
+					Score:  15,
+					Rings:  0,
+					TeamID: "1",
+				},
+				{
+					ID:     "5",
+					Score:  0,
+					Rings:  0,
+					TeamID: "2",
+				},
+				{
+					ID:     "6",
+					Score:  -25,
+					Rings:  1,
+					TeamID: "3",
+				},
+			},
+		},
+		{
+			name: "Caller makes JINK",
+			game: PlayingGame_Jink(),
+			expectedScores: []Player{
+				{ID: "1"},
+				{ID: "2"},
+				{ID: "3", Score: 60},
+			},
+		},
+		{
+			name: "Caller makes Jink - doubles",
+			game: PlayingGame_Jink_Doubles(),
+			expectedScores: []Player{
+				{ID: "1"},
+				{ID: "2"},
+				{ID: "3", Score: 60},
+				{ID: "4"},
+				{ID: "5"},
+				{ID: "6", Score: 60},
+			},
+		},
+		{
+			name: "Caller make 30 but didn't call jink",
+			game: PlayingGame_Thirty(),
+			expectedScores: []Player{
+				{ID: "1"},
+				{ID: "2"},
+				{ID: "3", Score: 30},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.applyScores()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+			for _, player := range test.game.Players {
+				var expectedScore int
+				var expectedRings int
+				for _, expectedPlayer := range test.expectedScores {
+					if expectedPlayer.ID == player.ID {
+						expectedScore = expectedPlayer.Score
+						expectedRings = expectedPlayer.Rings
+					}
+				}
+				if player.Score != expectedScore {
+					t.Errorf("expected player %s score to be %d, got %d", player.ID, expectedScore, player.Score)
+				}
+				if player.Rings != expectedRings {
+					t.Errorf("expected player %s rings to be %d, got %d", player.ID, expectedRings, player.Rings)
+				}
+			}
+		})
+	}
+}
+
+func TestGame_isGameOver(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		expectedResult bool
+	}{
+		{
+			name:           "Game not over",
+			game:           TwoPlayerGame(),
+			expectedResult: false,
+		},
+		{
+			name:           "Game over",
+			game:           CompletedGame(),
+			expectedResult: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.game.isGameOver()
+			if result != test.expectedResult {
+				t.Errorf("expected result to be %t, got %t", test.expectedResult, result)
+			}
+		})
+	}
+}
+
+func TestGame_validateCaller(t *testing.T) {
+	tests := []struct {
+		name           string
+		game           Game
+		playerID       string
+		desiredStatus  RoundStatus
+		expectingError bool
+	}{
+		{
+			name:           "Player is caller",
+			game:           PlayingGame_RoundStart("1"),
+			playerID:       "1",
+			desiredStatus:  Playing,
+			expectingError: false,
+		},
+		{
+			name:           "Player is not caller",
+			game:           PlayingGame_RoundStart("1"),
+			playerID:       "2",
+			desiredStatus:  Playing,
+			expectingError: true,
+		},
+		{
+			name:           "Player is caller - wrong status",
+			game:           PlayingGame_RoundStart("1"),
+			playerID:       "PlayerCalled",
+			desiredStatus:  Calling,
+			expectingError: true,
+		},
+		{
+			name:           "Invalid playerID",
+			game:           PlayingGame_RoundStart("1"),
+			desiredStatus:  Playing,
+			expectingError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.validateCaller(test.playerID, test.desiredStatus)
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+			}
+		})
+	}
+
+}
+
 type CallWrap struct {
 	playerID             string
 	call                 Call
@@ -39,7 +725,7 @@ func TestGame_Call(t *testing.T) {
 		},
 		{
 			name: "Game in called state",
-			game: CalledGame(),
+			game: CalledGameFivePlayers(),
 			calls: []CallWrap{{
 				playerID:         "2",
 				call:             Fifteen,
@@ -231,6 +917,9 @@ func TestGame_Call(t *testing.T) {
 						t.Errorf("expected an error, got nil")
 					}
 				} else {
+					if err != nil {
+						t.Errorf("expected no error, got %v", err)
+					}
 					var player Player
 					for _, p := range test.game.Players {
 						if p.ID == call.playerID {
@@ -261,159 +950,86 @@ func TestGame_Call(t *testing.T) {
 	}
 }
 
-func TestGame_MinKeep(t *testing.T) {
-	tests := []struct {
-		name            string
-		game            Game
-		expectedMinKeep int
-		errorExpected   bool
-	}{
-		{
-			name:            "2 player game",
-			game:            TwoPlayerGame(),
-			expectedMinKeep: 0,
-		},
-		{
-			name:            "3 player game",
-			game:            ThreePlayerGame(),
-			expectedMinKeep: 0,
-		},
-		{
-			name:            "4 player game",
-			game:            FourPlayerGame(),
-			expectedMinKeep: 0,
-		},
-		{
-			name:            "5 player game",
-			game:            FivePlayerGame(),
-			expectedMinKeep: 1,
-		},
-		{
-			name:            "6 player game",
-			game:            SixPlayerGame(),
-			expectedMinKeep: 2,
-		},
-		{
-			name:          "Invalid number of players - 1",
-			game:          OnePlayerGame(),
-			errorExpected: true,
-		},
-		{
-			name:          "Invalid number of players - 7",
-			game:          SevenPlayerGame(),
-			errorExpected: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			minKeep, err := test.game.MinKeep()
-			if test.errorExpected {
-				if err == nil {
-					t.Errorf("expected an error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-				if minKeep != test.expectedMinKeep {
-					t.Errorf("expected minKeep to be %d, got %d", test.expectedMinKeep, minKeep)
-				}
-			}
-		})
-	}
-}
-
 func TestGame_SelectSuit(t *testing.T) {
 	tests := []struct {
-		name             string
-		game             Game
-		playerID         string
-		suit             Suit
-		cards            []CardName
-		expectedSuit     Suit
-		expectedStatus   RoundStatus
-		expectedRevision int
-		expectingError   bool
+		name                 string
+		game                 Game
+		playerID             string
+		suit                 Suit
+		cards                []CardName
+		expectedNextPlayerID string
+		expectedStatus       RoundStatus
+		expectedRevision     int
+		expectingError       bool
 	}{
 		{
-			name:             "Valid selection - keep 1 from my hand and 1 from dummy",
-			game:             CalledGame(),
-			playerID:         "2",
-			suit:             Diamonds,
-			cards:            []CardName{ACE_DIAMONDS, KING_SPADES},
-			expectedSuit:     Diamonds,
-			expectedStatus:   Buying,
-			expectedRevision: 1,
+			name:                 "Valid selection - keep 1 from my hand and 1 from dummy",
+			game:                 CalledGameFivePlayers(),
+			playerID:             "PlayerCalled",
+			suit:                 Hearts,
+			cards:                []CardName{NINE_HEARTS, JOKER},
+			expectedNextPlayerID: "2",
+			expectedStatus:       Buying,
+			expectedRevision:     1,
 		},
 		{
-			name:             "Valid selection - not keeping any cards",
-			game:             CalledGame(),
-			playerID:         "2",
-			suit:             Diamonds,
-			cards:            []CardName{},
-			expectedSuit:     Diamonds,
-			expectedStatus:   Buying,
-			expectedRevision: 1,
+			name:                 "Valid selection - not keeping any cards",
+			game:                 CalledGameThreePlayers(),
+			playerID:             "PlayerCalled",
+			suit:                 Diamonds,
+			cards:                []CardName{},
+			expectedNextPlayerID: "2",
+			expectedStatus:       Buying,
+			expectedRevision:     1,
 		},
 		{
-			name:             "Valid selection - keep 5 cards",
-			game:             CalledGame(),
-			playerID:         "2",
-			suit:             Diamonds,
-			cards:            []CardName{ACE_DIAMONDS, KING_SPADES, QUEEN_SPADES, JACK_SPADES, JOKER},
-			expectedSuit:     Diamonds,
-			expectedStatus:   Buying,
-			expectedRevision: 1,
+			name:                 "Valid selection - keep 5 cards",
+			game:                 CalledGameFivePlayers(),
+			playerID:             "PlayerCalled",
+			suit:                 Hearts,
+			cards:                []CardName{NINE_HEARTS, EIGHT_HEARTS, SEVEN_HEARTS, SIX_HEARTS, JOKER},
+			expectedStatus:       Buying,
+			expectedNextPlayerID: "2",
+			expectedRevision:     1,
 		},
 		{
 			name:           "Invalid player - not the goer",
-			game:           CalledGame(),
+			game:           CalledGameFivePlayers(),
 			playerID:       "1",
 			suit:           Hearts,
 			cards:          []CardName{ACE_HEARTS},
-			expectedSuit:   Hearts,
-			expectedStatus: Buying,
 			expectingError: true,
 		},
 		{
-			name:           "Invalid state",
-			game:           TwoPlayerGame(),
-			playerID:       "1",
+			name:           "Invalid number of cards - too many",
+			game:           CalledGameFivePlayers(),
+			playerID:       "PlayerCalled",
 			suit:           Hearts,
-			cards:          []CardName{ACE_HEARTS},
-			expectedSuit:   Hearts,
-			expectedStatus: Buying,
+			cards:          []CardName{NINE_HEARTS, EIGHT_HEARTS, SEVEN_HEARTS, SIX_HEARTS, FOUR_SPADES, JOKER},
 			expectingError: true,
 		},
 		{
-			name:           "Invalid number of cards",
-			game:           CalledGame(),
-			playerID:       "2",
+			name:           "Invalid number of cards - too few",
+			game:           CalledGameFivePlayers(),
+			playerID:       "PlayerCalled",
 			suit:           Hearts,
-			cards:          []CardName{ACE_SPADES, KING_SPADES, QUEEN_SPADES, JACK_SPADES, JOKER, ACE_DIAMONDS},
-			expectedSuit:   Hearts,
-			expectedStatus: Buying,
+			cards:          []CardName{},
 			expectingError: true,
 		},
 		{
 			name:           "Invalid card - not in hand",
-			game:           CalledGame(),
-			playerID:       "2",
+			game:           CalledGameFivePlayers(),
+			playerID:       "PlayerCalled",
 			suit:           Hearts,
 			cards:          []CardName{FIVE_CLUBS},
-			expectedSuit:   Hearts,
-			expectedStatus: Buying,
 			expectingError: true,
 		},
 		{
 			name:           "Duplicate card",
-			game:           CalledGame(),
-			playerID:       "2",
+			game:           CalledGameFivePlayers(),
+			playerID:       "PlayerCalled",
 			suit:           Hearts,
-			cards:          []CardName{ACE_DIAMONDS, ACE_DIAMONDS},
-			expectedSuit:   Hearts,
-			expectedStatus: Buying,
+			cards:          []CardName{JOKER, JOKER},
 			expectingError: true,
 		},
 	}
@@ -432,8 +1048,8 @@ func TestGame_SelectSuit(t *testing.T) {
 				if test.game.CurrentRound.Status != test.expectedStatus {
 					t.Errorf("expected round status to be %s, got %s", test.expectedStatus, test.game.CurrentRound.Status)
 				}
-				if test.game.CurrentRound.Suit != test.expectedSuit {
-					t.Errorf("expected suit to be %s, got %s", test.expectedSuit, test.game.CurrentRound.Suit)
+				if test.game.CurrentRound.Suit != test.suit {
+					t.Errorf("expected suit to be %s, got %s", test.suit, test.game.CurrentRound.Suit)
 				}
 				if test.game.Revision != test.expectedRevision {
 					t.Errorf("expected revision to be %d, got %d", test.expectedRevision, test.game.Revision)
@@ -445,6 +1061,11 @@ func TestGame_SelectSuit(t *testing.T) {
 				}
 				if !compare(state.Cards, test.cards) {
 					t.Errorf("expected player to have all of the selected cards %v, got %v", test.cards, state.Cards)
+				}
+				if test.expectedNextPlayerID != "" {
+					if test.game.CurrentRound.CurrentHand.CurrentPlayerID != test.expectedNextPlayerID {
+						t.Errorf("expected next player to be %s, got %s", test.expectedNextPlayerID, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
+					}
 				}
 			}
 		})
@@ -576,6 +1197,80 @@ func TestGame_Buy(t *testing.T) {
 			}
 			if test.game.Revision != test.expectedRevision {
 				t.Errorf("expected revision to be %d, got %d", test.expectedRevision, test.game.Revision)
+			}
+		})
+	}
+}
+
+func TestGame_Play(t *testing.T) {
+	tests := []struct {
+		name               string
+		game               Game
+		playerID           string
+		card               CardName
+		expectedStatus     RoundStatus
+		expectedNextPlayer string
+		expectingError     bool
+	}{
+		{
+			name:               "Valid play - first card",
+			game:               PlayingGame_RoundStart("1"),
+			playerID:           "1",
+			card:               TWO_HEARTS,
+			expectedStatus:     Playing,
+			expectedNextPlayer: "2",
+		},
+		{
+			name:           "Try to play a card that isn't in your hand",
+			game:           PlayingGame_RoundStart("1"),
+			playerID:       "1",
+			card:           ACE_SPADES,
+			expectedStatus: Playing,
+			expectingError: true,
+		},
+		{
+			name:               "Following suit",
+			game:               PlayingGame_RoundStart_FirstCardPlayed(),
+			playerID:           "2",
+			card:               THREE_CLUBS,
+			expectedStatus:     Playing,
+			expectedNextPlayer: "1",
+		},
+		{
+			name:           "Not following suit",
+			game:           PlayingGame_RoundStart_FirstCardPlayed(),
+			playerID:       "2",
+			card:           FOUR_DIAMONDS,
+			expectedStatus: Playing,
+			expectingError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.Play(test.playerID, test.card)
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if test.game.CurrentRound.Status != test.expectedStatus {
+					t.Errorf("expected round status to be %s, got %s", test.expectedStatus, test.game.CurrentRound.Status)
+				}
+				if test.game.CurrentRound.CurrentHand.CurrentPlayerID != test.expectedNextPlayer {
+					t.Errorf("expected next player to be %s, got %s", test.expectedNextPlayer, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
+				}
+				// Check that he has all of retained the cards he selected
+				state, err := test.game.GetState(test.playerID)
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if contains(state.Cards, test.card) {
+					t.Errorf("expected player to not have played card %s, got %v", test.card, state.Cards)
+				}
 			}
 		})
 	}

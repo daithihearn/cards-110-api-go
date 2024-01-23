@@ -56,71 +56,216 @@ func (g *Game) GetState(playerID string) (State, error) {
 	return gameState, nil
 }
 
-func (g *Game) EndRound() error {
-	// Add the current round to the completed rounds
+// MinKeep returns the minimum number of cards that must be kept by a player
+func (g *Game) MinKeep() (int, error) {
+	switch len(g.Players) {
+	case 2:
+		return 0, nil
+	case 3:
+		return 0, nil
+	case 4:
+		return 0, nil
+	case 5:
+		return 1, nil
+	case 6:
+		return 2, nil
+	}
+	return 0, fmt.Errorf("invalid number of players")
+}
+
+func (g *Game) completeHand() error {
+	// 1. Find the winner
+	winningCard, err := findWinningCard(g.CurrentRound.CurrentHand, g.CurrentRound.Suit)
+	if err != nil {
+		return err
+	}
+
+	// 2. Add the hand to the completed hands
+	g.CurrentRound.CompletedHands = append(g.CurrentRound.CompletedHands, g.CurrentRound.CurrentHand)
+
+	// 3. Set the next hand
+	g.CurrentRound.CurrentHand = Hand{
+		Timestamp:       time.Now(),
+		CurrentPlayerID: winningCard.PlayerID,
+		PlayedCards:     make([]PlayedCard, 0),
+	}
+
+	return nil
+}
+
+func (g *Game) completeRound() error {
+	// 1. Check if all hands have been played or if everyone has passed
+	if len(g.CurrentRound.CompletedHands) != 5 && g.CurrentRound.Status != Calling {
+		return fmt.Errorf("round not complete")
+	}
+
+	// 2. Add round to completed
 	g.Completed = append(g.Completed, g.CurrentRound)
 
-	// Get next dealer
+	// 3. Create next round
 	nextDealer, err := nextPlayer(g.Players, g.CurrentRound.DealerID)
 	if err != nil {
 		return err
 	}
-
-	// Create next hand
-	nextPlayer, err := nextPlayer(g.Players, nextDealer.ID)
-	if err != nil {
-		return err
+	nextPlayer, err2 := nextPlayer(g.Players, nextDealer.ID)
+	if err2 != nil {
+		return err2
 	}
 	nextHand := Hand{
 		Timestamp:       time.Now(),
 		CurrentPlayerID: nextPlayer.ID,
+		PlayedCards:     make([]PlayedCard, 0),
 	}
-
-	// Create a new round
 	g.CurrentRound = Round{
-		Timestamp:   time.Now(),
-		Number:      g.CurrentRound.Number + 1,
-		DealerID:    nextDealer.ID,
-		Status:      Calling,
-		CurrentHand: nextHand,
+		Timestamp:      time.Now(),
+		Number:         g.CurrentRound.Number + 1,
+		DealerID:       nextDealer.ID,
+		Status:         Calling,
+		CurrentHand:    nextHand,
+		CompletedHands: make([]Hand, 0),
 	}
 
-	// Deal the cards
-	deck, hands, err := DealCards(ShuffleCards(NewDeck()), len(g.Players))
-	if err != nil {
-		return err
+	// 4. Clear cards and calls
+	for i := range g.Players {
+		g.Players[i].Cards = make([]CardName, 0)
+		g.Players[i].Call = Pass
 	}
-	var dummy []CardName
+
+	// 5. Deal cards
+	deck, dummy, hands, err3 := DealCards(ShuffleCards(NewDeck()), len(g.Players))
+	if err3 != nil {
+		return err3
+	}
+
 	for i, hand := range hands {
-		if i >= len(g.Players) {
-			dummy = hand
-			break
-		}
 		g.Players[i].Cards = hand
 	}
 	g.Dummy = dummy
 	g.Deck = deck
 
-	// Increment revision
-	g.Revision++
+	return nil
+}
+
+func (g *Game) completeGame() error {
+	winningTeam, err := findWinningTeam(g.Players, g.CurrentRound)
+	if err != nil {
+		return err
+	}
+
+	for i, p := range g.Players {
+		if p.TeamID == winningTeam {
+			g.Players[i].Winner = true
+		}
+	}
+	g.Status = Completed
 
 	return nil
 }
 
-func (g *Game) Call(playerID string, call Call) error {
+func (g *Game) applyScores() error {
+	// 1. Find winning card for each hand
+	winningCards, err := findWinningCardsForRound(g.CurrentRound)
+	if err != nil {
+		return err
+	}
+
+	// 2. Check if there was a jink
+	jinkHappened, errJink := checkForJink(winningCards, g.Players, g.CurrentRound.GoerID)
+	if errJink != nil {
+		return errJink
+	}
+	if jinkHappened {
+		teamId, errT := getTeamID(winningCards[0].PlayerID, g.Players)
+		if errT != nil {
+			return errT
+		}
+		// The successful team gets 60 points
+		for i, p := range g.Players {
+			if p.TeamID == teamId {
+				g.Players[i].Score += 60
+			}
+		}
+		return nil
+	}
+
+	// 3. Calculate scores
+	scores, errScore := calculateScores(winningCards, g.Players, g.CurrentRound.Suit)
+	if errScore != nil {
+		return errScore
+	}
+
+	// 4. If the goer didn't make their contract, set score to minus the contract
+	goer, errP := findPlayer(g.CurrentRound.GoerID, g.Players)
+	if errP != nil {
+		return errP
+	}
+	call := int(goer.Call)
+	if scores[goer.TeamID] < call {
+		scores[goer.TeamID] = -call
+	}
+
+	// 5. Apply scores
+	for teamId, score := range scores {
+		for i, p := range g.Players {
+			if p.TeamID == teamId {
+				g.Players[i].Score += score
+				if score < 0 {
+					g.Players[i].Rings += 1
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (g *Game) isGameOver() bool {
+	for _, p := range g.Players {
+		if p.Score >= 110 {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *Game) validateCaller(playerID string, desiredStatus RoundStatus) error {
 	// Check the game is active
 	if g.Status != Active {
 		return fmt.Errorf("game not active")
 	}
 
 	// Check current round is calling
-	if g.CurrentRound.Status != Calling {
+	if g.CurrentRound.Status != desiredStatus {
 		return fmt.Errorf("round not calling")
+	}
+
+	// Ensure the playerID is valid
+	if playerID == "" {
+		return fmt.Errorf("invalid player ID")
 	}
 
 	// Check the player is the current player
 	if g.CurrentRound.CurrentHand.CurrentPlayerID != playerID {
 		return fmt.Errorf("not current player")
+	}
+
+	// Check that the player has a valid teamID
+	player, err := findPlayer(playerID, g.Players)
+	if err != nil {
+		return err
+	}
+	if player.TeamID == "" {
+		return fmt.Errorf("invalid team ID")
+	}
+
+	return nil
+}
+
+func (g *Game) Call(playerID string, call Call) error {
+	// Validate the caller
+	err := g.validateCaller(playerID, Calling)
+	if err != nil {
+		return err
 	}
 
 	// If they are in the bunker (score < -30) they can only pass
@@ -184,7 +329,8 @@ func (g *Game) Call(playerID string, call Call) error {
 
 		if topCall <= Ten {
 			log.Printf("No one called. Starting new round...")
-			err = g.EndRound()
+			err = g.completeRound()
+			g.Revision++
 			return err
 		}
 
@@ -250,47 +396,26 @@ func (g *Game) Call(playerID string, call Call) error {
 	return nil
 }
 
-// MinKeep returns the minimum number of cards that must be kept by a player
-func (g *Game) MinKeep() (int, error) {
-	switch len(g.Players) {
-	case 2:
-		return 0, nil
-	case 3:
-		return 0, nil
-	case 4:
-		return 0, nil
-	case 5:
-		return 1, nil
-	case 6:
-		return 2, nil
-	}
-	return 0, fmt.Errorf("invalid number of players")
-}
-
 func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
-	// Verify the at the round is in the called state
-	if g.CurrentRound.Status != Called {
-		return fmt.Errorf("round must be in the called state to select a suit")
-	}
-
-	// Verify that the player is the goer
-	if g.CurrentRound.GoerID != playerID {
-		return fmt.Errorf("only the goer can select the suit")
+	// Validate the caller
+	err := g.validateCaller(playerID, Called)
+	if err != nil {
+		return err
 	}
 
 	// Verify the number of cards selected is valid (<=5 and >= minKeep)
-	minKeep, err := g.MinKeep()
-	if err != nil {
-		return err
+	minKeep, errM := g.MinKeep()
+	if errM != nil {
+		return errM
 	}
 	if len(cards) > 5 || len(cards) < minKeep {
 		return fmt.Errorf("invalid number of cards selected")
 	}
 
 	// Verify the cards are valid (must be either in the player's hand or the dummy's hand and must be unique
-	state, err := g.GetState(playerID)
-	if err != nil {
-		return err
+	state, errS := g.GetState(playerID)
+	if errS != nil {
+		return errS
 	}
 	if !containsAllUnique(state.Cards, cards) {
 		return fmt.Errorf("invalid card selected")
@@ -312,9 +437,9 @@ func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
 	g.Dummy = nil
 
 	// Set the next player
-	np, err := nextPlayer(g.Players, playerID)
-	if err != nil {
-		return err
+	np, errP := nextPlayer(g.Players, g.CurrentRound.DealerID)
+	if errP != nil {
+		return errP
 	}
 	g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
 
@@ -324,66 +449,62 @@ func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
 	return nil
 }
 
-func (g *Game) Buy(id string, cards []CardName) error {
-	// Verify the at the round is in the buying state
-	if g.CurrentRound.Status != Buying {
-		return fmt.Errorf("round must be in the buying state to buy cards")
-	}
-
-	// Verify that is the player's go
-	if g.CurrentRound.CurrentHand.CurrentPlayerID != id {
-		return fmt.Errorf("only the current player can buy cards")
+func (g *Game) Buy(playerID string, cards []CardName) error {
+	// Validate the caller
+	err := g.validateCaller(playerID, Buying)
+	if err != nil {
+		return err
 	}
 
 	// Verify the number of cards selected is valid (<=5 and >= minKeep)
-	minKeep, err := g.MinKeep()
-	if err != nil {
-		return err
+	minKeep, errM := g.MinKeep()
+	if errM != nil {
+		return errM
 	}
 	if len(cards) > 5 || len(cards) < minKeep {
 		return fmt.Errorf("invalid number of cards selected")
 	}
 
 	// Verify the cards are valid (must be either in the player's hand or the dummy's hand and must be unique
-	state, err := g.GetState(id)
-	if err != nil {
-		return err
+	state, errS := g.GetState(playerID)
+	if errS != nil {
+		return errS
 	}
 	if !containsAllUnique(state.Cards, cards) {
 		return fmt.Errorf("invalid card selected")
 	}
 
 	// Get cards from the deck so the player has 5 cards
-	deck, cards, err := BuyCards(g.Deck, cards)
-	if err != nil {
-		return err
+	deck, cards, errC := BuyCards(g.Deck, cards)
+	if errC != nil {
+		return errC
 	}
 
 	g.Deck = deck
 
 	// Set my cards
 	for i, p := range g.Players {
-		if p.ID == id {
+		if p.ID == playerID {
 			g.Players[i].Cards = cards
 			break
 		}
 	}
 
 	// If the current player is the dealer update the round status to playing
-	if g.CurrentRound.DealerID == id {
+	if g.CurrentRound.DealerID == playerID {
 		g.CurrentRound.Status = Playing
 
 		// Set the next player when the dealer buys
-		np, err := nextPlayer(g.Players, g.CurrentRound.GoerID)
-		if err != nil {
-			return err
+		np, errP := nextPlayer(g.Players, g.CurrentRound.GoerID)
+		if errP != nil {
+			return errP
 		}
 		g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
 	} else {
 		// Set the next player
-		np, err := nextPlayer(g.Players, id)
-		if err != nil {
-			return err
+		np, errN := nextPlayer(g.Players, playerID)
+		if errN != nil {
+			return errN
 		}
 		g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
 	}
@@ -392,4 +513,99 @@ func (g *Game) Buy(id string, cards []CardName) error {
 	g.Revision++
 
 	return nil
+}
+
+func (g *Game) Play(id string, card CardName) error {
+	// Verify the at the round is in the playing state
+	if g.CurrentRound.Status != Playing {
+		return fmt.Errorf("round must be in the playing state to play a card")
+	}
+
+	// Verify that is the player's go
+	if g.CurrentRound.CurrentHand.CurrentPlayerID != id {
+		return fmt.Errorf("only the current player can play a card")
+	}
+
+	// Verify the card is valid
+	state, err := g.GetState(id)
+	if err != nil {
+		return err
+	}
+	if !contains(state.Cards, card) {
+		return fmt.Errorf("invalid card selected")
+	}
+
+	// Check that they are following suit
+	if g.CurrentRound.CurrentHand.LeadOut == "" {
+		// I must be leading out
+		g.CurrentRound.CurrentHand.LeadOut = card
+	} else {
+		if !isFollowing(card, state.Cards, g.CurrentRound.CurrentHand, g.CurrentRound.Suit) {
+			return fmt.Errorf("must follow suit")
+		}
+	}
+
+	// Remove the card from the player's hand
+	var cards []CardName
+	for _, c := range state.Cards {
+		if c != card {
+			cards = append(cards, c)
+		}
+	}
+	for i, p := range g.Players {
+		if p.ID == id {
+			g.Players[i].Cards = cards
+			break
+		}
+	}
+
+	// Add the card to the played cards
+	pc := PlayedCard{
+		PlayerID: id,
+		Card:     card,
+	}
+	g.CurrentRound.CurrentHand.PlayedCards = append(g.CurrentRound.CurrentHand.PlayedCards, pc)
+
+	// Check if the hand is complete
+	if len(g.CurrentRound.CurrentHand.PlayedCards) < len(g.Players) {
+		// Set the next player
+		np, err := nextPlayer(g.Players, id)
+		if err != nil {
+			return err
+		}
+		g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
+	} else {
+
+		err = g.completeHand()
+		if err != nil {
+			return err
+		}
+
+		// Check if the round is complete
+		if len(g.CurrentRound.CompletedHands) == 5 {
+			err = g.applyScores()
+			if err != nil {
+				return err
+			}
+
+			// Check if the game is complete
+			if g.isGameOver() {
+				err = g.completeGame()
+				if err != nil {
+					return err
+				}
+			} else {
+				err = g.completeRound()
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Increment revision
+	g.Revision++
+
+	return nil
+
 }
