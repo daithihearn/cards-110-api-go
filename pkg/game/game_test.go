@@ -1201,3 +1201,77 @@ func TestGame_Buy(t *testing.T) {
 		})
 	}
 }
+
+func TestGame_Play(t *testing.T) {
+	tests := []struct {
+		name               string
+		game               Game
+		playerID           string
+		card               CardName
+		expectedStatus     RoundStatus
+		expectedNextPlayer string
+		expectingError     bool
+	}{
+		{
+			name:               "Valid play - first card",
+			game:               PlayingGame_RoundStart("1"),
+			playerID:           "1",
+			card:               TWO_HEARTS,
+			expectedStatus:     Playing,
+			expectedNextPlayer: "2",
+		},
+		{
+			name:           "Try to play a card that isn't in your hand",
+			game:           PlayingGame_RoundStart("1"),
+			playerID:       "1",
+			card:           ACE_SPADES,
+			expectedStatus: Playing,
+			expectingError: true,
+		},
+		{
+			name:               "Following suit",
+			game:               PlayingGame_RoundStart_FirstCardPlayed(),
+			playerID:           "2",
+			card:               THREE_CLUBS,
+			expectedStatus:     Playing,
+			expectedNextPlayer: "1",
+		},
+		{
+			name:           "Not following suit",
+			game:           PlayingGame_RoundStart_FirstCardPlayed(),
+			playerID:       "2",
+			card:           FOUR_DIAMONDS,
+			expectedStatus: Playing,
+			expectingError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.game.Play(test.playerID, test.card)
+			if test.expectingError {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if test.game.CurrentRound.Status != test.expectedStatus {
+					t.Errorf("expected round status to be %s, got %s", test.expectedStatus, test.game.CurrentRound.Status)
+				}
+				if test.game.CurrentRound.CurrentHand.CurrentPlayerID != test.expectedNextPlayer {
+					t.Errorf("expected next player to be %s, got %s", test.expectedNextPlayer, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
+				}
+				// Check that he has all of retained the cards he selected
+				state, err := test.game.GetState(test.playerID)
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				if contains(state.Cards, test.card) {
+					t.Errorf("expected player to not have played card %s, got %v", test.card, state.Cards)
+				}
+			}
+		})
+	}
+}

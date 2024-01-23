@@ -349,6 +349,22 @@ func TestGameUtils_isFollowing(t *testing.T) {
 			suit:           Diamonds,
 			expectedResult: true,
 		},
+		{
+			name:           "Following",
+			myCard:         THREE_CLUBS,
+			myCards:        []CardName{TWO_HEARTS, THREE_CLUBS, FOUR_DIAMONDS, FIVE_SPADES, SIX_HEARTS},
+			currentHand:    Hand{LeadOut: ACE_CLUBS, PlayedCards: []PlayedCard{{PlayerID: "1", Card: ACE_CLUBS}}},
+			suit:           Clubs,
+			expectedResult: true,
+		},
+		{
+			name:           "Not following",
+			myCard:         FOUR_DIAMONDS,
+			myCards:        []CardName{TWO_HEARTS, THREE_CLUBS, FOUR_DIAMONDS, FIVE_SPADES, SIX_HEARTS},
+			currentHand:    Hand{LeadOut: ACE_CLUBS, PlayedCards: []PlayedCard{{PlayerID: "1", Card: ACE_CLUBS}}},
+			suit:           Clubs,
+			expectedResult: false,
+		},
 	}
 
 	for _, test := range tests {

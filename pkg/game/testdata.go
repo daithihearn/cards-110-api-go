@@ -312,6 +312,38 @@ func PlayingGame_RoundStart(dealerId string) Game {
 	return game
 }
 
+func PlayingGame_RoundStart_FirstCardPlayed() Game {
+	p1 := Player1()
+	p1.Cards = []CardName{KING_CLUBS, QUEEN_HEARTS, JACK_SPADES, TEN_DIAMONDS}
+	p2 := Player2()
+	p2.Cards = []CardName{TWO_HEARTS, THREE_CLUBS, FOUR_DIAMONDS, FIVE_SPADES, SIX_HEARTS}
+
+	return Game{
+		ID:        "1",
+		Name:      "Test Game",
+		Status:    Active,
+		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Players:   []Player{p1, p2},
+		CurrentRound: Round{
+			DealerID: "1",
+			GoerID:   "2",
+			Status:   Playing,
+			CurrentHand: Hand{
+				CurrentPlayerID: "2",
+				LeadOut:         ACE_CLUBS,
+				PlayedCards:     []PlayedCard{{PlayerID: "1", Card: ACE_CLUBS}},
+			},
+			CompletedHands: []Hand{},
+			Suit:           Clubs,
+			Number:         1,
+		},
+		Dummy:   Dummy(),
+		AdminID: "1",
+		Deck:    NewDeck(),
+	}
+
+}
+
 func PlayingGame_Hand1Complete(dealerId string) Game {
 	game := PlayingGame_RoundStart(dealerId)
 

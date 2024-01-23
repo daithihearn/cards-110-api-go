@@ -233,12 +233,13 @@ func canRenage(leadOut Card, myTrumps []Card) bool {
 func isFollowing(myCard CardName, myCards []CardName, currentHand Hand, suit Suit) bool {
 	mySuit := myCard.Card().Suit
 	leadOut := currentHand.LeadOut.Card()
-	suitLead := leadOut.Suit == suit || leadOut.Suit == Wild
+	trumpLead := leadOut.Suit == suit || leadOut.Suit == Wild
 
-	if suitLead {
+	if trumpLead {
 		var myTrumps []Card
 		for _, card := range myCards {
-			if mySuit == suit || mySuit == Wild {
+			s := card.Card().Suit
+			if s == suit || s == Wild {
 				myTrumps = append(myTrumps, card.Card())
 			}
 		}
