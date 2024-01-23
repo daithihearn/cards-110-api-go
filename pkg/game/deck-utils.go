@@ -16,19 +16,29 @@ func ShuffleCards(cards []CardName) []CardName {
 	return shuffled
 }
 
-func DealCards(deck []CardName, numPlayers int) ([]CardName, [][]CardName, error) {
-	hands := make([][]CardName, numPlayers+1)
+// DealCards deals the cards to the players and returns the remaining cards
+// and the dummy hand.
+func DealCards(deck []CardName, numPlayers int) ([]CardName, []CardName, [][]CardName, error) {
+	if numPlayers < 2 || numPlayers > 6 {
+		return nil, nil, nil, fmt.Errorf("invalid number of players")
+	}
+	dummy := make([]CardName, 5)
+	hands := make([][]CardName, numPlayers)
 	// Deal the cards
 	for i := 0; i < 5; i++ {
 		for j := 0; j < numPlayers+1; j++ {
 			if len(deck) == 0 {
-				return nil, nil, fmt.Errorf("deck is empty")
+				return nil, nil, nil, fmt.Errorf("deck is empty")
 			}
-			hands[j] = append(hands[j], deck[0])
+			if j == numPlayers {
+				dummy[i] = deck[0]
+			} else {
+				hands[j] = append(hands[j], deck[0])
+			}
 			deck = deck[1:]
 		}
 	}
-	return deck, hands, nil
+	return deck, dummy, hands, nil
 }
 
 func BuyCards(deck []CardName, cards []CardName) ([]CardName, []CardName, error) {

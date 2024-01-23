@@ -367,6 +367,7 @@ func TestGameUtils_getActiveSuit(t *testing.T) {
 		hand           Hand
 		suit           Suit
 		expectedResult Suit
+		expectingError bool
 	}{
 		{
 			name:           "Trump cards played",
@@ -382,7 +383,7 @@ func TestGameUtils_getActiveSuit(t *testing.T) {
 		},
 		{
 			name:           "Ace of hearts played",
-			hand:           Hand{LeadOut: ACE_HEARTS, PlayedCards: []PlayedCard{{Card: JACK_HEARTS, PlayerID: "1"}, {Card: FIVE_HEARTS, PlayerID: "2"}, {Card: ACE_HEARTS, PlayerID: "3"}}},
+			hand:           Hand{LeadOut: JACK_CLUBS, PlayedCards: []PlayedCard{{Card: JACK_CLUBS, PlayerID: "1"}, {Card: FIVE_HEARTS, PlayerID: "2"}, {Card: ACE_HEARTS, PlayerID: "3"}}},
 			suit:           Diamonds,
 			expectedResult: Diamonds,
 		},
@@ -392,64 +393,21 @@ func TestGameUtils_getActiveSuit(t *testing.T) {
 			suit:           Clubs,
 			expectedResult: Hearts,
 		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result := getActiveSuit(test.hand, test.suit)
-			if result != test.expectedResult {
-				t.Errorf("expected %v, got %v", test.expectedResult, result)
-			}
-		})
-	}
-}
-
-func TestGameUtils_findWinningCard(t *testing.T) {
-	tests := []struct {
-		name           string
-		hand           Hand
-		suit           Suit
-		activeSuit     Suit
-		expectedResult PlayedCard
-		expectingError bool
-	}{
 		{
-			name:           "No cards played",
-			hand:           Hand{LeadOut: JACK_HEARTS, PlayedCards: []PlayedCard{}},
-			suit:           Hearts,
-			activeSuit:     Hearts,
-			expectedResult: PlayedCard{},
+			name: "Suit not set",
+			hand: Hand{LeadOut: JACK_HEARTS, PlayedCards: []PlayedCard{
+				{Card: JACK_HEARTS, PlayerID: "1"},
+				{Card: FIVE_HEARTS, PlayerID: "2"},
+				{Card: ACE_DIAMONDS, PlayerID: "3"},
+				{Card: TWO_CLUBS, PlayerID: "4"},
+			}},
 			expectingError: true,
 		},
-		{
-			name:           "No trump cards played",
-			hand:           Hand{LeadOut: JACK_HEARTS, PlayedCards: []PlayedCard{{Card: JACK_HEARTS, PlayerID: "1"}, {Card: FIVE_HEARTS, PlayerID: "2"}, {Card: ACE_DIAMONDS, PlayerID: "3"}}},
-			suit:           Diamonds,
-			activeSuit:     Hearts,
-			expectedResult: PlayedCard{Card: JACK_HEARTS, PlayerID: "1"},
-			expectingError: false,
-		},
-		{
-			name:           "Trump cards played",
-			hand:           Hand{LeadOut: JACK_HEARTS, PlayedCards: []PlayedCard{{Card: JACK_HEARTS, PlayerID: "1"}, {Card: FIVE_HEARTS, PlayerID: "2"}, {Card: ACE_HEARTS, PlayerID: "3"}}},
-			suit:           Hearts,
-			activeSuit:     Hearts,
-			expectedResult: PlayedCard{Card: FIVE_HEARTS, PlayerID: "2"},
-			expectingError: false,
-		},
-		{
-			name:           "Trump cards played - Joker",
-			hand:           Hand{LeadOut: TEN_HEARTS, PlayedCards: []PlayedCard{{Card: TEN_HEARTS, PlayerID: "1"}, {Card: SIX_HEARTS, PlayerID: "2"}, {Card: JOKER, PlayerID: "3"}}},
-			suit:           Hearts,
-			activeSuit:     Hearts,
-			expectedResult: PlayedCard{Card: JOKER, PlayerID: "3"},
-			expectingError: false,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := findWinningCard(test.hand.PlayedCards, test.suit, test.activeSuit)
+			result, err := getActiveSuit(test.hand, test.suit)
 			if test.expectingError {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -466,7 +424,7 @@ func TestGameUtils_findWinningCard(t *testing.T) {
 	}
 }
 
-func TestGameUtils_determineWinner(t *testing.T) {
+func TestGameUtils_findWinningCard(t *testing.T) {
 	tests := []struct {
 		name           string
 		hand           Hand
@@ -497,16 +455,23 @@ func TestGameUtils_determineWinner(t *testing.T) {
 		},
 		{
 			name:           "Trump cards played - Joker",
-			hand:           Hand{LeadOut: TEN_HEARTS, PlayedCards: []PlayedCard{{Card: TEN_HEARTS, PlayerID: "1"}, {Card: SIX_HEARTS, PlayerID: "2"}, {Card: JOKER, PlayerID: "3"}}},
+			hand:           Hand{LeadOut: JACK_CLUBS, PlayedCards: []PlayedCard{{Card: JACK_CLUBS, PlayerID: "1"}, {Card: SIX_CLUBS, PlayerID: "2"}, {Card: JOKER, PlayerID: "3"}}},
 			suit:           Hearts,
 			expectedResult: PlayedCard{Card: JOKER, PlayerID: "3"},
+			expectingError: false,
+		},
+		{
+			name:           "Trump cards played - Ace of hearts",
+			hand:           Hand{LeadOut: JACK_CLUBS, PlayedCards: []PlayedCard{{Card: JACK_CLUBS, PlayerID: "1"}, {Card: SIX_CLUBS, PlayerID: "2"}, {Card: ACE_HEARTS, PlayerID: "3"}}},
+			suit:           Hearts,
+			expectedResult: PlayedCard{Card: ACE_HEARTS, PlayerID: "3"},
 			expectingError: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := determineWinner(test.hand, test.suit)
+			result, err := findWinningCard(test.hand, test.suit)
 			if test.expectingError {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -605,7 +570,7 @@ func TestGameUtils_checkForJink(t *testing.T) {
 		expectingError bool
 	}{
 		{
-			name: "Jink - doubles",
+			name: "30 but called 20 - doubles",
 			winningCards: []PlayedCard{
 				{Card: JACK_HEARTS, PlayerID: "1"},
 				{Card: JACK_DIAMONDS, PlayerID: "1"},
@@ -614,12 +579,32 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{Card: JACK_HEARTS, PlayerID: "1"},
 			},
 			players: []Player{
-				{ID: "1", TeamID: "1"},
+				{ID: "1", TeamID: "1", Call: Twenty},
 				{ID: "2", TeamID: "2"},
 				{ID: "3", TeamID: "3"},
 				{ID: "4", TeamID: "1"},
 				{ID: "5", TeamID: "2"},
 				{ID: "6", TeamID: "3"},
+			},
+			goerID:         "1",
+			expectedResult: false,
+		},
+		{
+			name: "Jink- doubles",
+			winningCards: []PlayedCard{
+				{Card: JACK_HEARTS, PlayerID: "1"},
+				{Card: JACK_DIAMONDS, PlayerID: "1"},
+				{Card: JACK_CLUBS, PlayerID: "4"},
+				{Card: JACK_SPADES, PlayerID: "4"},
+				{Card: JACK_HEARTS, PlayerID: "1"},
+			},
+			players: []Player{
+				{ID: "1", TeamID: "1", Call: Jink},
+				{ID: "2", TeamID: "2"},
+				{ID: "3", TeamID: "3"},
+				{ID: "4", TeamID: "1", Call: Ten},
+				{ID: "5", TeamID: "2", Call: Twenty},
+				{ID: "6", TeamID: "3", Call: TwentyFive},
 			},
 			goerID:         "1",
 			expectedResult: true,
@@ -634,7 +619,23 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{Card: JACK_HEARTS, PlayerID: "1"},
 			},
 			players: []Player{
-				{ID: "1", TeamID: "1"},
+				{ID: "1", TeamID: "1", Call: Jink},
+				{ID: "2", TeamID: "2"},
+			},
+			goerID:         "1",
+			expectedResult: false,
+		},
+		{
+			name: "30 but called 20 - two player game",
+			winningCards: []PlayedCard{
+				{Card: JACK_HEARTS, PlayerID: "1"},
+				{Card: JACK_DIAMONDS, PlayerID: "1"},
+				{Card: JACK_CLUBS, PlayerID: "1"},
+				{Card: JACK_SPADES, PlayerID: "1"},
+				{Card: JACK_HEARTS, PlayerID: "1"},
+			},
+			players: []Player{
+				{ID: "1", TeamID: "1", Call: Twenty},
 				{ID: "2", TeamID: "2"},
 			},
 			goerID:         "1",
@@ -650,12 +651,29 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{Card: JACK_HEARTS, PlayerID: "1"},
 			},
 			players: []Player{
-				{ID: "1", TeamID: "1"},
-				{ID: "2", TeamID: "2"},
+				{ID: "1", TeamID: "1", Call: Jink},
+				{ID: "2", TeamID: "2", Call: TwentyFive},
 				{ID: "3", TeamID: "3"},
 			},
 			goerID:         "1",
 			expectedResult: true,
+		},
+		{
+			name: "30 but called 15 - three player game",
+			winningCards: []PlayedCard{
+				{Card: JACK_HEARTS, PlayerID: "1"},
+				{Card: JACK_DIAMONDS, PlayerID: "1"},
+				{Card: JACK_CLUBS, PlayerID: "1"},
+				{Card: JACK_SPADES, PlayerID: "1"},
+				{Card: JACK_HEARTS, PlayerID: "1"},
+			},
+			players: []Player{
+				{ID: "1", TeamID: "1", Call: Fifteen},
+				{ID: "2", TeamID: "2"},
+				{ID: "3", TeamID: "3"},
+			},
+			goerID:         "1",
+			expectedResult: false,
 		},
 		{
 			name: "Jink - four player game",
@@ -670,10 +688,28 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{ID: "1", TeamID: "1"},
 				{ID: "2", TeamID: "2"},
 				{ID: "3", TeamID: "3"},
-				{ID: "4", TeamID: "4"},
+				{ID: "4", TeamID: "4", Call: Jink},
 			},
 			goerID:         "4",
 			expectedResult: true,
+		},
+		{
+			name: "30 but called 25 - four player game",
+			winningCards: []PlayedCard{
+				{Card: JACK_HEARTS, PlayerID: "4"},
+				{Card: JACK_DIAMONDS, PlayerID: "4"},
+				{Card: JACK_CLUBS, PlayerID: "4"},
+				{Card: JACK_SPADES, PlayerID: "4"},
+				{Card: JACK_HEARTS, PlayerID: "4"},
+			},
+			players: []Player{
+				{ID: "1", TeamID: "1", Call: TwentyFive},
+				{ID: "2", TeamID: "2"},
+				{ID: "3", TeamID: "3"},
+				{ID: "4", TeamID: "4"},
+			},
+			goerID:         "4",
+			expectedResult: false,
 		},
 		{
 			name: "Jink - five player game",
@@ -687,12 +723,31 @@ func TestGameUtils_checkForJink(t *testing.T) {
 			players: []Player{
 				{ID: "1", TeamID: "1"},
 				{ID: "2", TeamID: "2"},
-				{ID: "3", TeamID: "3"},
+				{ID: "3", TeamID: "3", Call: Jink},
 				{ID: "4", TeamID: "4"},
 				{ID: "5", TeamID: "5"},
 			},
 			goerID:         "3",
 			expectedResult: true,
+		},
+		{
+			name: "30 but called 25 - five player game",
+			winningCards: []PlayedCard{
+				{Card: JACK_HEARTS, PlayerID: "3"},
+				{Card: JACK_DIAMONDS, PlayerID: "3"},
+				{Card: JACK_CLUBS, PlayerID: "3"},
+				{Card: JACK_SPADES, PlayerID: "3"},
+				{Card: JACK_HEARTS, PlayerID: "3"},
+			},
+			players: []Player{
+				{ID: "1", TeamID: "1", Call: 25},
+				{ID: "2", TeamID: "2"},
+				{ID: "3", TeamID: "3"},
+				{ID: "4", TeamID: "4"},
+				{ID: "5", TeamID: "5"},
+			},
+			goerID:         "3",
+			expectedResult: false,
 		},
 		{
 			name: "Jink - no jink",
@@ -723,7 +778,7 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{Card: JACK_SPADES, PlayerID: "2"},
 			},
 			players: []Player{
-				{ID: "1", TeamID: "1"},
+				{ID: "1", TeamID: "1", Call: Jink},
 				{ID: "2", TeamID: "2"},
 				{ID: "3", TeamID: "3"},
 			},
@@ -740,7 +795,7 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{Card: JACK_HEARTS, PlayerID: "1"},
 			},
 			players: []Player{
-				{ID: "1", TeamID: "1"},
+				{ID: "1", TeamID: "1", Call: Jink},
 				{ID: "2", TeamID: "2"},
 				{ID: "3", TeamID: "3"},
 			},
@@ -757,7 +812,7 @@ func TestGameUtils_checkForJink(t *testing.T) {
 				{Card: JACK_HEARTS, PlayerID: "1"},
 			},
 			players: []Player{
-				{ID: "1", TeamID: "1"},
+				{ID: "1", TeamID: "1", Call: Jink},
 				{ID: "2", TeamID: "2"},
 				{ID: "3", TeamID: "3"},
 			},

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestCreate(t *testing.T) {
+func TestGameService_Create(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -96,7 +96,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
+func TestGameService_Get(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -170,7 +170,7 @@ func TestGet(t *testing.T) {
 
 }
 
-func TestGetAll(t *testing.T) {
+func TestGameService_GetAll(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -229,7 +229,7 @@ func TestGetAll(t *testing.T) {
 	}
 }
 
-func TestGetState(t *testing.T) {
+func TestGameService_GetState(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -335,7 +335,7 @@ func TestGetState(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestGameService_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -440,7 +440,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestCall(t *testing.T) {
+func TestGameService_Call(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -563,7 +563,7 @@ func TestCall(t *testing.T) {
 	}
 }
 
-func TestSelectSuit(t *testing.T) {
+func TestGameService_SelectSuit(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -581,11 +581,11 @@ func TestSelectSuit(t *testing.T) {
 	}{
 		{
 			name:               "simple select suit",
-			gameID:             CalledGame().ID,
-			playerID:           "2",
-			suit:               Clubs,
-			cards:              []CardName{KING_DIAMONDS},
-			mockGetResult:      &[]Game{CalledGame()},
+			gameID:             CalledGameFivePlayers().ID,
+			playerID:           "PlayerCalled",
+			suit:               Hearts,
+			cards:              []CardName{NINE_HEARTS, EIGHT_HEARTS, SEVEN_HEARTS, SIX_HEARTS},
+			mockGetResult:      &[]Game{CalledGameFivePlayers()},
 			mockGetExists:      &[]bool{true},
 			mockGetError:       &[]error{nil},
 			mockUpdateOneError: &[]error{nil},
@@ -626,11 +626,11 @@ func TestSelectSuit(t *testing.T) {
 		},
 		{
 			name:               "error thrown updating game",
-			gameID:             CalledGame().ID,
+			gameID:             CalledGameFivePlayers().ID,
 			playerID:           "2",
 			suit:               Clubs,
 			cards:              []CardName{KING_DIAMONDS},
-			mockGetResult:      &[]Game{CalledGame()},
+			mockGetResult:      &[]Game{CalledGameFivePlayers()},
 			mockGetError:       &[]error{nil},
 			mockGetExists:      &[]bool{true},
 			mockUpdateOneError: &[]error{errors.New("something went wrong")},

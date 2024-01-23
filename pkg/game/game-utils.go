@@ -155,16 +155,12 @@ func NewGame(playerIDs []string, name string, adminID string) (Game, error) {
 	round, err := createFirstRound(players, dealer)
 
 	// Deal the cards
-	deck, hands, err := DealCards(ShuffleCards(NewDeck()), len(players))
+	deck, dummy, hands, err := DealCards(ShuffleCards(NewDeck()), len(players))
 	if err != nil {
 		return Game{}, err
 	}
-	var dummy []CardName
+
 	for i, hand := range hands {
-		if i >= len(players) {
-			dummy = hand
-			break
-		}
 		players[i].Cards = hand
 	}
 
@@ -266,39 +262,38 @@ func isFollowing(myCard CardName, myCards []CardName, currentHand Hand, suit Sui
 		mySuit == leadOut.Suit
 }
 
-func determineWinner(hand Hand, suit Suit) (PlayedCard, error) {
-	// Get active suit
-	activeSuit := getActiveSuit(hand, suit)
-
-	// Find the winning card
-	return findWinningCard(hand.PlayedCards, suit, activeSuit)
-}
-
 // getActiveSuit Was a suit or wild card played? If not set the lead out card as the suit
-func getActiveSuit(hand Hand, suit Suit) Suit {
+func getActiveSuit(hand Hand, suit Suit) (Suit, error) {
+	if suit == "" {
+		return "", errors.New("suit not set")
+	}
 	// If a trump was played, the active suit is the trump suit
 	for _, playedCard := range hand.PlayedCards {
 		if playedCard.Card.Card().Suit == suit || playedCard.Card.Card().Suit == Wild {
-			return suit
+			return suit, nil
 		}
 	}
 
-	return hand.LeadOut.Card().Suit
+	return hand.LeadOut.Card().Suit, nil
 }
 
-func findWinningCard(playedCards []PlayedCard, suit Suit, activeSuit Suit) (PlayedCard, error) {
-	if len(playedCards) == 0 {
+func findWinningCard(hand Hand, suit Suit) (PlayedCard, error) {
+	if len(hand.PlayedCards) == 0 {
 		return PlayedCard{}, errors.New("no cards played")
 	}
-	winningCard := playedCards[0]
-	for i, playedCard := range playedCards {
-		if i == 0 {
-			continue
-		}
+
+	// Get active suit
+	activeSuit, err := getActiveSuit(hand, suit)
+	if err != nil {
+		return PlayedCard{}, err
+	}
+
+	var winningCard PlayedCard
+	for _, playedCard := range hand.PlayedCards {
 		card := playedCard.Card.Card()
 		if suit == activeSuit {
 			// A trump card was played
-			if card.Value > winningCard.Card.Card().Value {
+			if (card.Suit == suit || card.Suit == Wild) && card.Value > winningCard.Card.Card().Value {
 				winningCard = playedCard
 			}
 		} else {
@@ -309,6 +304,9 @@ func findWinningCard(playedCards []PlayedCard, suit Suit, activeSuit Suit) (Play
 				}
 			}
 		}
+	}
+	if winningCard.Card == "" {
+		return PlayedCard{}, errors.New("winning card not found")
 	}
 	return winningCard, nil
 }
@@ -352,7 +350,7 @@ func findWinningCardsForRound(round Round) ([]PlayedCard, error) {
 	}
 
 	for i, hand := range round.CompletedHands {
-		winningCard, err := determineWinner(hand, round.Suit)
+		winningCard, err := findWinningCard(hand, round.Suit)
 		if err != nil {
 			return nil, err
 		}
@@ -381,10 +379,14 @@ func getTeamID(playerID string, players []Player) (string, error) {
 }
 
 func checkForJink(winningCards []PlayedCard, players []Player, goerId string) (bool, error) {
-	goingTeam, err := getTeamID(goerId, players)
+	goer, err := findPlayer(goerId, players)
 	if err != nil {
 		return false, err
 	}
+	if goer.Call != Jink {
+		return false, nil
+	}
+
 	if len(winningCards) != 5 {
 		return false, errors.New("invalid number of winning cards")
 	}
@@ -398,7 +400,7 @@ func checkForJink(winningCards []PlayedCard, players []Player, goerId string) (b
 		if err != nil {
 			return false, err
 		}
-		if teamID != goingTeam {
+		if teamID != goer.TeamID {
 			return false, nil
 		}
 	}
