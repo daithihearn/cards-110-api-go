@@ -378,10 +378,13 @@ func TestGame_completeRound(t *testing.T) {
 				if test.game.CurrentRound.Number != test.expectedRoundNumber {
 					t.Errorf("expected round number to be %d, got %d", test.expectedRoundNumber, test.game.CurrentRound.Number)
 				}
-				// All players should have 5 cards
+				// All players should have 5 cards and no call
 				for _, player := range test.game.Players {
 					if len(player.Cards) != 5 {
 						t.Errorf("expected player %s to have 5 cards, got %d", player.ID, len(player.Cards))
+					}
+					if player.Call != Pass {
+						t.Errorf("expected player %s to have call %d, got %d", player.ID, Pass, player.Call)
 					}
 				}
 				// Dummy should have 5 cards

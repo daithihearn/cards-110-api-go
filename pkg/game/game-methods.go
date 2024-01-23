@@ -125,9 +125,10 @@ func (g *Game) completeRound() error {
 		CompletedHands: make([]Hand, 0),
 	}
 
-	// 4. Clear cards
+	// 4. Clear cards and calls
 	for i := range g.Players {
 		g.Players[i].Cards = make([]CardName, 0)
+		g.Players[i].Call = Pass
 	}
 
 	// 5. Deal cards
