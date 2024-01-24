@@ -78,9 +78,9 @@ func main() {
 		redisPassword = "password"
 	}
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     redisUrl,      // use your Redis Address
-		Password: redisPassword, // no password set
-		DB:       0,             // use default DB
+		Addr:     redisUrl, // use your Redis Address
+		Password: redisPassword,
+		DB:       0, // use default DB
 	})
 	gameCache := cache.NewRedisCache[game.State](rdb, ctx)
 	statsCache := cache.NewRedisCache[[]stats.PlayerStats](rdb, ctx)

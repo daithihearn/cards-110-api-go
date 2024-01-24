@@ -24,7 +24,7 @@ type ServiceI interface {
 
 type Service struct {
 	Col   db.CollectionI[Game]
-	Cache *cache.RedisCache[State]
+	Cache cache.Cache[State]
 }
 
 func getCacheKey(gameId string, playerId string) string {
@@ -67,7 +67,7 @@ func (s *Service) Get(ctx context.Context, gameId string) (Game, bool, error) {
 func (s *Service) GetState(ctx context.Context, gameId string, playerID string) (State, bool, error) {
 	// Check the cache.
 	state, found, err := s.Cache.Get(getCacheKey(gameId, playerID))
-	if err != nil && found {
+	if err == nil && found {
 		return state, true, nil
 	}
 
@@ -153,7 +153,7 @@ func (s *Service) Call(ctx context.Context, gameId string, playerID string, call
 
 	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
 	if err != nil {
-		return Game{}, err
+		log.Printf("Failed to save state to cache: %s", err)
 	}
 
 	return game, nil
@@ -190,7 +190,7 @@ func (s *Service) SelectSuit(ctx context.Context, gameId string, playerID string
 
 	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
 	if err != nil {
-		return Game{}, err
+		log.Printf("Failed to save state to cache: %s", err)
 	}
 
 	return game, nil
@@ -227,7 +227,7 @@ func (s *Service) Buy(ctx context.Context, gameId string, playerID string, cards
 
 	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
 	if err != nil {
-		return Game{}, err
+		log.Printf("Failed to save state to cache: %s", err)
 	}
 
 	return game, nil
@@ -264,17 +264,7 @@ func (s *Service) Play(ctx context.Context, gameId string, playerID string, card
 
 	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
 	if err != nil {
-		return Game{}, err
-	}
-
-	// Invalidate the stats caches if the game is over
-	if game.Status == Completed {
-		for _, player := range game.Players {
-			err = s.Cache.Delete("stats-" + player.ID)
-			if err != nil {
-				return Game{}, err
-			}
-		}
+		log.Printf("Failed to save state to cache: %s", err)
 	}
 
 	return game, nil

@@ -30,7 +30,7 @@ func getCacheKey(playerId string) string {
 func (s *Service) GetStats(ctx context.Context, playerID string) ([]PlayerStats, error) {
 	// Check the cache.
 	stats, found, err := s.Cache.Get(getCacheKey(playerID))
-	if err != nil && found {
+	if err == nil && found {
 		return stats, nil
 	}
 
@@ -116,7 +116,7 @@ func (s *Service) GetStats(ctx context.Context, playerID string) ([]PlayerStats,
 	}
 
 	// Save the result to the cache.
-	err = s.Cache.Set(getCacheKey(playerID), results, 0)
+	err = s.Cache.Set(getCacheKey(playerID), results, 2*time.Minute)
 	if err != nil {
 		log.Printf("Failed to save state to cache: %s", err)
 	}
