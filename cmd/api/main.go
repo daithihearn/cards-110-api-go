@@ -10,12 +10,14 @@ package main
 import (
 	_ "cards-110-api/docs"
 	"cards-110-api/pkg/auth"
+	"cards-110-api/pkg/cache"
 	"cards-110-api/pkg/db"
 	"cards-110-api/pkg/game"
 	"cards-110-api/pkg/profile"
 	"cards-110-api/pkg/settings"
 	"cards-110-api/pkg/stats"
 	"context"
+	"github.com/go-redis/redis/v8"
 	"log"
 	"os"
 	"os/signal"
@@ -66,6 +68,23 @@ func main() {
 		dbName = "cards-110"
 	}
 
+	// Configure redis
+	redisUrl := os.Getenv("REDIS_URL")
+	if redisUrl == "" {
+		redisUrl = "localhost:6379"
+	}
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisPassword == "" {
+		redisPassword = "password"
+	}
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     redisUrl, // use your Redis Address
+		Password: redisPassword,
+		DB:       0, // use default DB
+	})
+	gameCache := cache.NewRedisCache[game.State](rdb, ctx)
+	statsCache := cache.NewRedisCache[[]stats.PlayerStats](rdb, ctx)
+
 	// Configure collections
 	userCol, err := db.GetCollection(ctx, dbName, "appUsers")
 	if err != nil {
@@ -91,9 +110,9 @@ func main() {
 	settingsService := settings.Service{Col: settingsColRec}
 	settingsHandler := settings.Handler{S: &settingsService}
 	gamesColRec := db.Collection[game.Game]{Col: gameCol}
-	gameService := game.Service{Col: &gamesColRec}
+	gameService := game.Service{Col: &gamesColRec, Cache: gameCache}
 	gameHandler := game.Handler{S: &gameService}
-	statsService := stats.Service{Col: &gamesColRec}
+	statsService := stats.Service{Col: &gamesColRec, Cache: statsCache}
 	statsHandler := stats.Handler{S: &statsService}
 
 	// Set up the API routes.

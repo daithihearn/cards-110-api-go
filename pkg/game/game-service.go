@@ -1,11 +1,13 @@
 package game
 
 import (
+	"cards-110-api/pkg/cache"
 	"cards-110-api/pkg/db"
 	"context"
 	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
+	"time"
 )
 
 type ServiceI interface {
@@ -21,7 +23,12 @@ type ServiceI interface {
 }
 
 type Service struct {
-	Col db.CollectionI[Game]
+	Col   db.CollectionI[Game]
+	Cache cache.Cache[State]
+}
+
+func getCacheKey(gameId string, playerId string) string {
+	return gameId + "-" + playerId
 }
 
 // Create a new game.
@@ -57,17 +64,29 @@ func (s *Service) Get(ctx context.Context, gameId string) (Game, bool, error) {
 	return s.Col.FindOne(ctx, bson.M{"_id": gameId})
 }
 
-func (s *Service) GetState(ctx context.Context, gameId string, playerId string) (State, bool, error) {
+func (s *Service) GetState(ctx context.Context, gameId string, playerID string) (State, bool, error) {
+	// Check the cache.
+	state, found, err := s.Cache.Get(getCacheKey(gameId, playerID))
+	if err == nil && found {
+		return state, true, nil
+	}
+
 	// Get the game from the database.
-	game, has, err := s.Get(ctx, gameId)
-	if err != nil || !has {
-		return State{}, has, err
+	game, has, errG := s.Get(ctx, gameId)
+	if errG != nil || !has {
+		return State{}, has, errG
 	}
 
 	// Get the state for the player.
-	state, err := game.GetState(playerId)
+	state, err = game.GetState(playerID)
 	if err != nil {
 		return State{}, true, err
+	}
+
+	// Save the state to the cache.
+	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
+	if err != nil {
+		log.Printf("Failed to save state to cache: %s", err)
 	}
 
 	return state, true, nil
@@ -104,7 +123,7 @@ func (s *Service) Delete(ctx context.Context, gameId string, adminId string) err
 }
 
 // Call make a call
-func (s *Service) Call(ctx context.Context, gameId string, playerId string, call Call) (Game, error) {
+func (s *Service) Call(ctx context.Context, gameId string, playerID string, call Call) (Game, error) {
 	// Get the game from the database.
 	game, has, err := s.Get(ctx, gameId)
 	if err != nil {
@@ -115,7 +134,7 @@ func (s *Service) Call(ctx context.Context, gameId string, playerId string, call
 	}
 
 	// Make the call.
-	err = game.Call(playerId, call)
+	err = game.Call(playerID, call)
 	if err != nil {
 		return Game{}, err
 	}
@@ -125,6 +144,18 @@ func (s *Service) Call(ctx context.Context, gameId string, playerId string, call
 	if err != nil {
 		return Game{}, err
 	}
+
+	// Save the state to the cache.
+	state, err := game.GetState(playerID)
+	if err != nil {
+		return Game{}, err
+	}
+
+	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
+	if err != nil {
+		log.Printf("Failed to save state to cache: %s", err)
+	}
+
 	return game, nil
 }
 
@@ -150,6 +181,18 @@ func (s *Service) SelectSuit(ctx context.Context, gameId string, playerID string
 	if err != nil {
 		return Game{}, err
 	}
+
+	// Save the state to the cache.
+	state, err := game.GetState(playerID)
+	if err != nil {
+		return Game{}, err
+	}
+
+	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
+	if err != nil {
+		log.Printf("Failed to save state to cache: %s", err)
+	}
+
 	return game, nil
 }
 
@@ -175,6 +218,18 @@ func (s *Service) Buy(ctx context.Context, gameId string, playerID string, cards
 	if err != nil {
 		return Game{}, err
 	}
+
+	// Save the state to the cache.
+	state, err := game.GetState(playerID)
+	if err != nil {
+		return Game{}, err
+	}
+
+	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
+	if err != nil {
+		log.Printf("Failed to save state to cache: %s", err)
+	}
+
 	return game, nil
 }
 
@@ -200,5 +255,17 @@ func (s *Service) Play(ctx context.Context, gameId string, playerID string, card
 	if err != nil {
 		return Game{}, err
 	}
+
+	// Save the state to the cache.
+	state, err := game.GetState(playerID)
+	if err != nil {
+		return Game{}, err
+	}
+
+	err = s.Cache.Set(getCacheKey(gameId, playerID), state, 10*time.Minute)
+	if err != nil {
+		log.Printf("Failed to save state to cache: %s", err)
+	}
+
 	return game, nil
 }

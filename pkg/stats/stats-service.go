@@ -1,6 +1,7 @@
 package stats
 
 import (
+	"cards-110-api/pkg/cache"
 	"cards-110-api/pkg/db"
 	"cards-110-api/pkg/game"
 	"context"
@@ -17,16 +18,26 @@ type ServiceI interface {
 }
 
 type Service struct {
-	Col db.CollectionI[game.Game]
+	Col   db.CollectionI[game.Game]
+	Cache *cache.RedisCache[[]PlayerStats]
+}
+
+func getCacheKey(playerId string) string {
+	return "stats-" + playerId
 }
 
 // GetStats Get the stats for a player.
-func (s *Service) GetStats(ctx context.Context, playerId string) ([]PlayerStats, error) {
+func (s *Service) GetStats(ctx context.Context, playerID string) ([]PlayerStats, error) {
+	// Check the cache.
+	stats, found, err := s.Cache.Get(getCacheKey(playerID))
+	if err == nil && found {
+		return stats, nil
+	}
 
 	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{{Key: "status", Value: "FINISHED"}, {Key: "players._id", Value: playerId}}}},
+		{{Key: "$match", Value: bson.D{{Key: "status", Value: "FINISHED"}, {Key: "players._id", Value: playerID}}}},
 		{{Key: "$unwind", Value: "$players"}},
-		{{Key: "$match", Value: bson.D{{Key: "players._id", Value: playerId}}}},
+		{{Key: "$match", Value: bson.D{{Key: "players._id", Value: playerID}}}},
 		{{Key: "$project", Value: bson.D{
 			{Key: "gameId", Value: "$_id"},
 			{Key: "timestamp", Value: "$timestamp"},
@@ -102,6 +113,12 @@ func (s *Service) GetStats(ctx context.Context, playerId string) ([]PlayerStats,
 
 		results = append(results, playerStats)
 
+	}
+
+	// Save the result to the cache.
+	err = s.Cache.Set(getCacheKey(playerID), results, 2*time.Minute)
+	if err != nil {
+		log.Printf("Failed to save state to cache: %s", err)
 	}
 
 	return results, nil
