@@ -80,6 +80,10 @@ func (g *Game) completeHand() error {
 		return err
 	}
 
+	log.Printf("Winning card: %s", winningCard.Card)
+	log.Printf("Current hand: %v", g.CurrentRound.CurrentHand)
+	log.Printf("Current suit: %s", g.CurrentRound.Suit)
+
 	// 2. Add the hand to the completed hands
 	g.CurrentRound.CompletedHands = append(g.CurrentRound.CompletedHands, g.CurrentRound.CurrentHand)
 
@@ -397,6 +401,11 @@ func (g *Game) Call(playerID string, call Call) error {
 }
 
 func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
+	// Validate suit
+	if !suit.isValid() {
+		return fmt.Errorf("invalid suit")
+	}
+
 	// Validate the caller
 	err := g.validateCaller(playerID, Called)
 	if err != nil {

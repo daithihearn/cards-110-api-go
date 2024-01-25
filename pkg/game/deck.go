@@ -5,12 +5,16 @@ type Suit string
 
 const (
 	Empty    Suit = "EMPTY"
-	Clubs         = "Clubs"
-	Diamonds      = "Diamonds"
-	Hearts        = "Hearts"
-	Spades        = "Spades"
+	Clubs         = "CLUBS"
+	Diamonds      = "DIAMONDS"
+	Hearts        = "HEARTS"
+	Spades        = "SPADES"
 	Wild          = "WILD"
 )
+
+func (s Suit) isValid() bool {
+	return s == Clubs || s == Diamonds || s == Hearts || s == Spades || s == Wild
+}
 
 type CardName string
 
