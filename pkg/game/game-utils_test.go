@@ -460,28 +460,36 @@ func TestGameUtils_findWinningCard(t *testing.T) {
 			hand:           Hand{LeadOut: JACK_HEARTS, PlayedCards: []PlayedCard{{Card: JACK_HEARTS, PlayerID: "1"}, {Card: FIVE_HEARTS, PlayerID: "2"}, {Card: ACE_SPADES, PlayerID: "3"}}},
 			suit:           Diamonds,
 			expectedResult: PlayedCard{Card: JACK_HEARTS, PlayerID: "1"},
-			expectingError: false,
 		},
 		{
 			name:           "Trump cards played",
 			hand:           Hand{LeadOut: JACK_HEARTS, PlayedCards: []PlayedCard{{Card: JACK_HEARTS, PlayerID: "1"}, {Card: FIVE_HEARTS, PlayerID: "2"}, {Card: ACE_HEARTS, PlayerID: "3"}}},
 			suit:           Hearts,
 			expectedResult: PlayedCard{Card: FIVE_HEARTS, PlayerID: "2"},
-			expectingError: false,
 		},
 		{
 			name:           "Trump cards played - Joker",
 			hand:           Hand{LeadOut: JACK_CLUBS, PlayedCards: []PlayedCard{{Card: JACK_CLUBS, PlayerID: "1"}, {Card: SIX_CLUBS, PlayerID: "2"}, {Card: JOKER, PlayerID: "3"}}},
 			suit:           Hearts,
 			expectedResult: PlayedCard{Card: JOKER, PlayerID: "3"},
-			expectingError: false,
 		},
 		{
 			name:           "Trump cards played - Ace of hearts",
 			hand:           Hand{LeadOut: JACK_CLUBS, PlayedCards: []PlayedCard{{Card: JACK_CLUBS, PlayerID: "1"}, {Card: SIX_CLUBS, PlayerID: "2"}, {Card: ACE_HEARTS, PlayerID: "3"}}},
 			suit:           Hearts,
 			expectedResult: PlayedCard{Card: ACE_HEARTS, PlayerID: "3"},
-			expectingError: false,
+		},
+		{
+			name:           "Ten of trumps beats jack of cold suit",
+			hand:           Hand{LeadOut: JACK_SPADES, PlayedCards: []PlayedCard{{Card: JACK_SPADES, PlayerID: "1"}, {Card: TEN_DIAMONDS, PlayerID: "2"}}},
+			suit:           Diamonds,
+			expectedResult: PlayedCard{Card: TEN_DIAMONDS, PlayerID: "2"},
+		},
+		{
+			name:           "real world scenario",
+			hand:           Hand{LeadOut: ACE_SPADES, PlayedCards: []PlayedCard{{Card: ACE_SPADES, PlayerID: "2"}, {Card: FIVE_SPADES, PlayerID: "1"}}},
+			suit:           "SPADES",
+			expectedResult: PlayedCard{Card: FIVE_SPADES, PlayerID: "1"},
 		},
 	}
 

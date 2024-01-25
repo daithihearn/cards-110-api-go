@@ -710,7 +710,7 @@ func TestGame_Call(t *testing.T) {
 				playerID:             "2",
 				call:                 Fifteen,
 				expectedNextPlayerID: "1",
-				expectedRevision:     1,
+				expectedRevision:     3,
 			}},
 		},
 		{
@@ -761,13 +761,13 @@ func TestGame_Call(t *testing.T) {
 					playerID:             "2",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
-					expectedRevision:     1,
+					expectedRevision:     3,
 				},
 				{
 					playerID:         "1",
 					call:             Fifteen,
 					expectingError:   true,
-					expectedRevision: 1,
+					expectedRevision: 3,
 				},
 			},
 		},
@@ -779,13 +779,13 @@ func TestGame_Call(t *testing.T) {
 					playerID:             "2",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
-					expectedRevision:     1,
+					expectedRevision:     3,
 				},
 				{
 					playerID:             "1",
 					call:                 Twenty,
 					expectedNextPlayerID: "2",
-					expectedRevision:     2,
+					expectedRevision:     4,
 				},
 			},
 		},
@@ -797,13 +797,13 @@ func TestGame_Call(t *testing.T) {
 					playerID:             "2",
 					call:                 Fifteen,
 					expectedNextPlayerID: "1",
-					expectedRevision:     1,
+					expectedRevision:     3,
 				},
 				{
 					playerID:             "1",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
-					expectedRevision:     2,
+					expectedRevision:     4,
 				},
 			},
 			expectedGoerID: "1",
@@ -816,13 +816,13 @@ func TestGame_Call(t *testing.T) {
 					playerID:             "2",
 					call:                 Pass,
 					expectedNextPlayerID: "1",
-					expectedRevision:     1,
+					expectedRevision:     3,
 				},
 				{
 					playerID:             "1",
 					call:                 Pass,
 					expectedNextPlayerID: "1",
-					expectedRevision:     2,
+					expectedRevision:     4,
 				},
 			},
 		},
@@ -884,25 +884,25 @@ func TestGame_Call(t *testing.T) {
 					playerID:             "2",
 					call:                 Fifteen,
 					expectedNextPlayerID: "1",
-					expectedRevision:     1,
+					expectedRevision:     3,
 				},
 				{
 					playerID:             "1",
 					call:                 Fifteen,
 					expectedNextPlayerID: "2",
-					expectedRevision:     2,
+					expectedRevision:     4,
 				},
 				{
 					playerID:             "2",
 					call:                 Twenty,
 					expectedNextPlayerID: "1",
-					expectedRevision:     3,
+					expectedRevision:     5,
 				},
 				{
 					playerID:             "1",
 					call:                 Pass,
 					expectedNextPlayerID: "2",
-					expectedRevision:     4,
+					expectedRevision:     6,
 				},
 			},
 		},
@@ -1032,6 +1032,14 @@ func TestGame_SelectSuit(t *testing.T) {
 			cards:          []CardName{JOKER, JOKER},
 			expectingError: true,
 		},
+		{
+			name:           "Invalid suit",
+			game:           CalledGameFivePlayers(),
+			playerID:       "PlayerCalled",
+			suit:           "invalid",
+			cards:          []CardName{JOKER},
+			expectingError: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -1133,7 +1141,7 @@ func TestGame_Buy(t *testing.T) {
 			cards:            []CardName{ACE_HEARTS},
 			expectedStatus:   Buying,
 			expectingError:   true,
-			expectedRevision: 0,
+			expectedRevision: 2,
 		},
 		{
 			name:             "Invalid number of cards",
@@ -1229,12 +1237,28 @@ func TestGame_Play(t *testing.T) {
 			expectingError: true,
 		},
 		{
-			name:               "Following suit",
+			name:               "Player 1 - wins trick",
 			game:               PlayingGame_RoundStart_FirstCardPlayed(),
 			playerID:           "2",
 			card:               THREE_CLUBS,
 			expectedStatus:     Playing,
 			expectedNextPlayer: "1",
+		},
+		{
+			name:               "Player 1 - wins trick - different seating arrangement",
+			game:               PlayingGame_WinHand(),
+			playerID:           "player2",
+			card:               THREE_SPADES,
+			expectedStatus:     Playing,
+			expectedNextPlayer: "player1",
+		},
+		{
+			name:               "Player 2 - wins trick",
+			game:               PlayingGame_RoundStart_FirstCardPlayed(),
+			playerID:           "2",
+			card:               FIVE_CLUBS,
+			expectedStatus:     Playing,
+			expectedNextPlayer: "2",
 		},
 		{
 			name:           "Not following suit",
@@ -1270,6 +1294,10 @@ func TestGame_Play(t *testing.T) {
 				}
 				if contains(state.Cards, test.card) {
 					t.Errorf("expected player to not have played card %s, got %v", test.card, state.Cards)
+				}
+
+				if state.Round.CurrentHand.CurrentPlayerID != test.expectedNextPlayer {
+					t.Errorf("expected next player to be %s, got %s", test.expectedNextPlayer, state.Round.CurrentHand.CurrentPlayerID)
 				}
 			}
 		})

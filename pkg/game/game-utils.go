@@ -282,6 +282,9 @@ func findWinningCard(hand Hand, suit Suit) (PlayedCard, error) {
 	if len(hand.PlayedCards) == 0 {
 		return PlayedCard{}, errors.New("no cards played")
 	}
+	if !suit.isValid() {
+		return PlayedCard{}, errors.New("invalid suit")
+	}
 
 	// Get active suit
 	activeSuit, err := getActiveSuit(hand, suit)

@@ -372,7 +372,7 @@ func TestGameService_GetState(t *testing.T) {
 			expectedExists: true,
 		},
 		{
-			name:               "error writing to cache shouldn't stop the function from returning the result",
+			name:               "error writing to cache should return an error",
 			gameID:             TwoPlayerGame().ID,
 			playerID:           "2",
 			mockGetResult:      &[]Game{TwoPlayerGame()},
@@ -398,7 +398,7 @@ func TestGameService_GetState(t *testing.T) {
 				Players:      TwoPlayerGame().Players,
 			},
 			expectedExists: true,
-			expectingError: false,
+			expectingError: true,
 		},
 	}
 
@@ -609,7 +609,7 @@ func TestGameService_Call(t *testing.T) {
 			mockGetError:       &[]error{nil},
 			mockUpdateOneError: &[]error{nil},
 			mockSetCacheError:  &[]error{nil},
-			expectedRevision:   1,
+			expectedRevision:   3,
 		},
 		{
 			name:           "game not found",
@@ -663,7 +663,7 @@ func TestGameService_Call(t *testing.T) {
 			expectingError: true,
 		},
 		{
-			name:               "error writing to cache shouldn't stop the function from returning the result",
+			name:               "error writing to cache should return an error",
 			gameID:             TwoPlayerGame().ID,
 			playerID:           "2",
 			call:               Jink,
@@ -672,7 +672,8 @@ func TestGameService_Call(t *testing.T) {
 			mockGetError:       &[]error{nil},
 			mockUpdateOneError: &[]error{nil},
 			mockSetCacheError:  &[]error{errors.New("failed to write to cache")},
-			expectedRevision:   1,
+			expectedRevision:   2,
+			expectingError:     true,
 		},
 	}
 
@@ -807,7 +808,7 @@ func TestGameService_SelectSuit(t *testing.T) {
 			expectingError:     true,
 		},
 		{
-			name:               "error writing to cache shouldn't stop the function from returning the result",
+			name:               "error writing to cache should return an error",
 			gameID:             CalledGameFivePlayers().ID,
 			playerID:           "PlayerCalled",
 			suit:               Hearts,
@@ -818,6 +819,7 @@ func TestGameService_SelectSuit(t *testing.T) {
 			mockUpdateOneError: &[]error{nil},
 			mockSetCacheError:  &[]error{errors.New("failed to write to cache")},
 			expectedRevision:   1,
+			expectingError:     true,
 		},
 	}
 
@@ -936,7 +938,7 @@ func TestGameService_Buy(t *testing.T) {
 			expectingError:     true,
 		},
 		{
-			name:               "error writing to cache shouldn't stop the function from returning the result",
+			name:               "error writing to cache should return an error",
 			gameID:             "1",
 			playerID:           "2",
 			cards:              []CardName{SEVEN_HEARTS, EIGHT_HEARTS, NINE_HEARTS},
@@ -945,7 +947,7 @@ func TestGameService_Buy(t *testing.T) {
 			mockGetError:       &[]error{nil},
 			mockUpdateOneError: &[]error{nil},
 			mockSetCacheError:  &[]error{errors.New("failed to write to cache")},
-			expectedRevision:   1,
+			expectingError:     true,
 		},
 	}
 
@@ -1068,7 +1070,7 @@ func TestGameService_Play(t *testing.T) {
 			expectingError:     true,
 		},
 		{
-			name:               "error writing to cache shouldn't stop the function from returning the result",
+			name:               "error writing to cache should return an error",
 			gameID:             "1",
 			playerID:           "1",
 			card:               TWO_HEARTS,
@@ -1077,7 +1079,7 @@ func TestGameService_Play(t *testing.T) {
 			mockGetError:       &[]error{nil},
 			mockUpdateOneError: &[]error{nil},
 			mockSetCacheError:  &[]error{errors.New("failed to write to cache")},
-			expectedRevision:   1,
+			expectingError:     true,
 		},
 	}
 

@@ -120,6 +120,7 @@ func OnePlayerGame() Game {
 func TwoPlayerGame() Game {
 	return Game{
 		ID:        "1",
+		Revision:  2,
 		Name:      "Test Game",
 		Status:    Active,
 		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -316,7 +317,7 @@ func PlayingGame_RoundStart_FirstCardPlayed() Game {
 	p1 := Player1()
 	p1.Cards = []CardName{KING_CLUBS, QUEEN_HEARTS, JACK_SPADES, TEN_DIAMONDS}
 	p2 := Player2()
-	p2.Cards = []CardName{TWO_HEARTS, THREE_CLUBS, FOUR_DIAMONDS, FIVE_SPADES, SIX_HEARTS}
+	p2.Cards = []CardName{TWO_HEARTS, THREE_CLUBS, FOUR_DIAMONDS, FIVE_CLUBS, ACE_HEARTS}
 
 	return Game{
 		ID:        "1",
@@ -621,6 +622,80 @@ func PlayingGame_DoesntMakeContract_Doubles() Game {
 		Dummy:   Dummy(),
 		AdminID: "1",
 		Deck:    NewDeck(),
+	}
+}
+
+func PlayingGame_WinHand() Game {
+	return Game{
+		ID:       "2809635",
+		Revision: 166,
+		Status:   "ACTIVE",
+		Players: []Player{
+			{
+				ID:     "player1",
+				Seat:   1,
+				Call:   Fifteen,
+				Bought: 0,
+				Score:  90,
+				Rings:  2,
+				TeamID: "1",
+				Winner: false,
+				Cards: []CardName{
+					JACK_SPADES,
+					THREE_HEARTS,
+					QUEEN_CLUBS,
+				},
+			},
+			{
+				ID:     "player2",
+				Seat:   2,
+				Call:   Pass,
+				Bought: 0,
+				Score:  50,
+				Rings:  2,
+				TeamID: "2",
+				Winner: false,
+				Cards: []CardName{
+					EIGHT_CLUBS,
+					JACK_DIAMONDS,
+					TEN_DIAMONDS,
+					THREE_SPADES,
+				},
+			},
+		},
+		CurrentRound: Round{
+			Number:   13,
+			DealerID: "player1",
+			GoerID:   "player1",
+			Suit:     Spades,
+			Status:   Playing,
+			CurrentHand: Hand{
+				LeadOut:         FIVE_SPADES,
+				CurrentPlayerID: "player2",
+				PlayedCards: []PlayedCard{
+					{
+						PlayerID: "player1",
+						Card:     FIVE_SPADES,
+					},
+				},
+			},
+			DealerSeeing: false,
+			CompletedHands: []Hand{
+				{
+					LeadOut:         TEN_SPADES,
+					CurrentPlayerID: "player1",
+					PlayedCards: []PlayedCard{
+						{
+							PlayerID: "player2",
+							Card:     TEN_SPADES,
+						},
+						{
+							PlayerID: "player1",
+							Card:     QUEEN_SPADES,
+						},
+					},
+				}},
+		},
 	}
 }
 
