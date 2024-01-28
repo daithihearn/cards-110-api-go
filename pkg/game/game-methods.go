@@ -555,7 +555,7 @@ func (g *Game) Play(id string, card CardName) error {
 	}
 
 	// Remove the card from the player's hand
-	var cards []CardName
+	cards := make([]CardName, 0)
 	for _, c := range state.Cards {
 		if c != card {
 			cards = append(cards, c)
