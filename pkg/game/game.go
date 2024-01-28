@@ -75,9 +75,9 @@ type Game struct {
 	Name         string     `bson:"name" json:"name"`
 	Status       Status     `bson:"status" json:"status"`
 	Players      []Player   `bson:"players" json:"players"`
-	Dummy        []CardName `bson:"dummy" json:"dummy"`
-	CurrentRound Round      `bson:"currentRound" json:"currentRound"`
-	Completed    []Round    `bson:"completedRounds" json:"completedRounds"`
+	Dummy        []CardName `bson:"dummy" json:"-"`
+	CurrentRound Round      `bson:"currentRound" json:"-"`
+	Completed    []Round    `bson:"completedRounds" json:"-"`
 	Deck         []CardName `bson:"deck" json:"-"`
 }
 
