@@ -35,7 +35,7 @@ func (s *Service) GetStats(ctx context.Context, playerID string) ([]PlayerStats,
 	}
 
 	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{{Key: "status", Value: "FINISHED"}, {Key: "players._id", Value: playerID}}}},
+		{{Key: "$match", Value: bson.D{{Key: "status", Value: "COMPLETED"}, {Key: "players._id", Value: playerID}}}},
 		{{Key: "$unwind", Value: "$players"}},
 		{{Key: "$match", Value: bson.D{{Key: "players._id", Value: playerID}}}},
 		{{Key: "$project", Value: bson.D{
