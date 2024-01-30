@@ -36,7 +36,13 @@ func (g *Game) GetState(playerID string) (State, error) {
 		me.Cards = append(me.Cards, g.Dummy...)
 	}
 
-	// 3. Return player's game state
+	// 3. Get Previous round if there is one
+	var prevRound Round
+	if len(g.Completed) > 0 {
+		prevRound = g.Completed[len(g.Completed)-1]
+	}
+
+	// 4. Return player's game state
 	gameState := State{
 		ID:           g.ID,
 		Revision:     g.Revision,
@@ -49,6 +55,7 @@ func (g *Game) GetState(playerID string) (State, error) {
 		Cards:        me.Cards,
 		Status:       g.Status,
 		Round:        g.CurrentRound,
+		PrevRound:    prevRound,
 		MaxCall:      maxCall,
 		Players:      g.Players,
 	}

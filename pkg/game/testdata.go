@@ -720,3 +720,90 @@ func CompletedGame() Game {
 		AdminID:   "1",
 	}
 }
+
+func GameWithCompletedRounds() Game {
+	p1 := Player1()
+	p1.Score = 110
+	p2 := Player2()
+	p2.Score = 90
+
+	return Game{
+		ID:        "2",
+		Name:      "Test Game",
+		Status:    Completed,
+		Timestamp: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Players:   []Player{p1, p2},
+		AdminID:   "1",
+		CurrentRound: Round{
+			Number:   1,
+			DealerID: "1",
+			GoerID:   "1",
+			Suit:     Spades,
+			Status:   Completed,
+			CompletedHands: []Hand{
+				{
+					LeadOut:         FIVE_SPADES,
+					CurrentPlayerID: "2",
+					PlayedCards: []PlayedCard{
+						{
+							PlayerID: "1",
+							Card:     FIVE_SPADES,
+						},
+						{
+							PlayerID: "2",
+							Card:     TEN_SPADES,
+						},
+					},
+				},
+			},
+		},
+		Completed: []Round{
+			{
+				Number:   1,
+				DealerID: "1",
+				GoerID:   "1",
+				Suit:     Spades,
+				Status:   Completed,
+				CompletedHands: []Hand{
+					{
+						LeadOut:         FIVE_SPADES,
+						CurrentPlayerID: "2",
+						PlayedCards: []PlayedCard{
+							{
+								PlayerID: "1",
+								Card:     FIVE_SPADES,
+							},
+							{
+								PlayerID: "2",
+								Card:     TEN_SPADES,
+							},
+						},
+					},
+				},
+			},
+			{
+				Number:   2,
+				DealerID: "1",
+				GoerID:   "1",
+				Suit:     Spades,
+				Status:   Completed,
+				CompletedHands: []Hand{
+					{
+						LeadOut:         FIVE_SPADES,
+						CurrentPlayerID: "2",
+						PlayedCards: []PlayedCard{
+							{
+								PlayerID: "1",
+								Card:     FIVE_SPADES,
+							},
+							{
+								PlayerID: "2",
+								Card:     TEN_SPADES,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}

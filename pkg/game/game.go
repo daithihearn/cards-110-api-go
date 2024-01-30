@@ -94,5 +94,6 @@ type State struct {
 	MaxCall      Call       `json:"maxCall"`
 	Players      []Player   `json:"players"`
 	Round        Round      `json:"round"`
+	PrevRound    Round      `json:"previousRound"`
 	Cards        []CardName `json:"cards"`
 }
