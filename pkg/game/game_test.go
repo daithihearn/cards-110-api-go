@@ -151,6 +151,26 @@ func TestGame_GetState(t *testing.T) {
 				Round:        PlayingGame_RoundStart("3").CurrentRound,
 			},
 		},
+		{
+			name:     "Game with completed rounds",
+			game:     GameWithCompletedRounds(),
+			playerID: "1",
+			expectedState: State{
+				ID:           GameWithCompletedRounds().ID,
+				Revision:     GameWithCompletedRounds().Revision,
+				Me:           GameWithCompletedRounds().Players[0],
+				Cards:        GameWithCompletedRounds().Players[0].Cards,
+				IamDealer:    true,
+				IamGoer:      true,
+				IamSpectator: false,
+				IsMyGo:       false,
+				Status:       GameWithCompletedRounds().Status,
+				MaxCall:      0,
+				Players:      GameWithCompletedRounds().Players,
+				Round:        GameWithCompletedRounds().CurrentRound,
+				PrevRound:    GameWithCompletedRounds().Completed[len(GameWithCompletedRounds().Completed)-1],
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -214,6 +234,9 @@ func TestGame_GetState(t *testing.T) {
 				}
 				if state.Round.Number != test.expectedState.Round.Number {
 					t.Errorf("expected Round Number to be %d, got %d", test.expectedState.Round.Number, state.Round.Number)
+				}
+				if state.PrevRound.Number != test.expectedState.PrevRound.Number {
+					t.Errorf("expected PrevRound Number to be %d, got %d", test.expectedState.PrevRound.Number, state.PrevRound.Number)
 				}
 			}
 		})
