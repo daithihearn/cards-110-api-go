@@ -350,6 +350,14 @@ func TestGameUtils_isFollowing(t *testing.T) {
 			expectedResult: true,
 		},
 		{
+			name:           "Must follow a cold card",
+			myCard:         JACK_HEARTS,
+			myCards:        []CardName{JACK_HEARTS, FIVE_HEARTS, TWO_SPADES},
+			currentHand:    Hand{LeadOut: FIVE_SPADES},
+			suit:           Clubs,
+			expectedResult: false,
+		},
+		{
 			name:           "Following",
 			myCard:         THREE_CLUBS,
 			myCards:        []CardName{TWO_HEARTS, THREE_CLUBS, FOUR_DIAMONDS, FIVE_SPADES, SIX_HEARTS},

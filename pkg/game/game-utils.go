@@ -252,7 +252,7 @@ func isFollowing(myCard CardName, myCards []CardName, currentHand Hand, suit Sui
 
 	var mySuitedCards []Card
 	for _, card := range myCards {
-		if mySuit == leadOut.Suit {
+		if card.Card().Suit == leadOut.Suit {
 			mySuitedCards = append(mySuitedCards, card.Card())
 		}
 	}
