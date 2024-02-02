@@ -261,11 +261,7 @@ func (h *Handler) Call(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
 	}
-	state, err := game.GetState(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-		return
-	}
+	state := game.GetState(id)
 	c.IndentedJSON(http.StatusOK, state)
 }
 
@@ -313,11 +309,7 @@ func (h *Handler) SelectSuit(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
 	}
-	state, err := game.GetState(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-		return
-	}
+	state := game.GetState(id)
 	c.IndentedJSON(http.StatusOK, state)
 }
 
@@ -364,11 +356,7 @@ func (h *Handler) Buy(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
 	}
-	state, err := game.GetState(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-		return
-	}
+	state := game.GetState(id)
 	c.IndentedJSON(http.StatusOK, state)
 }
 
@@ -417,10 +405,6 @@ func (h *Handler) Play(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 		return
 	}
-	state, err := game.GetState(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
-		return
-	}
+	state := game.GetState(id)
 	c.IndentedJSON(http.StatusOK, state)
 }

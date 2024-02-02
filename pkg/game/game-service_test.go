@@ -320,7 +320,7 @@ func TestGameService_GetState(t *testing.T) {
 			expectingError:     true,
 		},
 		{
-			name:     "player not in the game",
+			name:     "player not in the game should be a spectator",
 			gameID:   TwoPlayerGame().ID,
 			playerID: "3",
 			mockGetResult: &[]Game{
@@ -332,8 +332,17 @@ func TestGameService_GetState(t *testing.T) {
 			mockGetCacheExists: &[]bool{false},
 			mockGetCacheError:  &[]error{nil},
 			mockSetCacheError:  &[]error{nil},
-			expectedExists:     false,
-			expectingError:     true,
+			expectedResult: State{
+				ID:           TwoPlayerGame().ID,
+				Revision:     TwoPlayerGame().Revision,
+				IamSpectator: true,
+				Status:       TwoPlayerGame().Status,
+				Round:        TwoPlayerGame().CurrentRound,
+				MaxCall:      TwoPlayerGame().Players[0].Call,
+				Players:      TwoPlayerGame().Players,
+			},
+			expectedExists: true,
+			expectingError: false,
 		},
 		{
 			name: "successful cache hit",
