@@ -15,14 +15,14 @@ func (g *Game) Me(playerID string) (Player, error) {
 	return Player{}, fmt.Errorf("player not found in game")
 }
 
-func (g *Game) GetState(playerID string) (State, error) {
-	// Get player
-	me, err := g.Me(playerID)
-	if err != nil {
-		return State{}, err
+func (g *Game) GetState(playerID string) State {
+	// 1. Get Previous round if there is one
+	var prevRound Round
+	if len(g.Completed) > 0 {
+		prevRound = g.Completed[len(g.Completed)-1]
 	}
 
-	// 1. Get max call
+	// 2. Get max call
 	maxCall := Pass
 	for _, p := range g.Players {
 		if p.Call > maxCall {
@@ -30,19 +30,30 @@ func (g *Game) GetState(playerID string) (State, error) {
 		}
 	}
 
-	// 2. Add dummy if applicable
+	// 3. Get player
+	me, err := g.Me(playerID)
+
+	// If the player isn't in the game they are a spectator
+	if err != nil {
+		return State{
+			ID:           g.ID,
+			Revision:     g.Revision,
+			IamSpectator: true,
+			Status:       g.Status,
+			Round:        g.CurrentRound,
+			PrevRound:    prevRound,
+			MaxCall:      maxCall,
+			Players:      g.Players,
+		}
+	}
+
+	// 4. Add dummy if applicable
 	iamGoer := g.CurrentRound.GoerID == playerID
 	if iamGoer && g.CurrentRound.Status == Called && g.Dummy != nil {
 		me.Cards = append(me.Cards, g.Dummy...)
 	}
 
-	// 3. Get Previous round if there is one
-	var prevRound Round
-	if len(g.Completed) > 0 {
-		prevRound = g.Completed[len(g.Completed)-1]
-	}
-
-	// 4. Return player's game state
+	// 5. Return player's game state
 	gameState := State{
 		ID:           g.ID,
 		Revision:     g.Revision,
@@ -60,7 +71,7 @@ func (g *Game) GetState(playerID string) (State, error) {
 		Players:      g.Players,
 	}
 
-	return gameState, nil
+	return gameState
 }
 
 // MinKeep returns the minimum number of cards that must be kept by a player
@@ -280,10 +291,7 @@ func (g *Game) Call(playerID string, call Call) error {
 	}
 
 	// If they are in the bunker (score < -30) they can only pass
-	state, err := g.GetState(playerID)
-	if err != nil {
-		return err
-	}
+	state := g.GetState(playerID)
 	if state.Me.Score < -30 && call != Pass {
 		return fmt.Errorf("player in bunker")
 	}
@@ -429,10 +437,7 @@ func (g *Game) SelectSuit(playerID string, suit Suit, cards []CardName) error {
 	}
 
 	// Verify the cards are valid (must be either in the player's hand or the dummy's hand and must be unique
-	state, errS := g.GetState(playerID)
-	if errS != nil {
-		return errS
-	}
+	state := g.GetState(playerID)
 	if !containsAllUnique(state.Cards, cards) {
 		return fmt.Errorf("invalid card selected")
 	}
@@ -482,10 +487,7 @@ func (g *Game) Buy(playerID string, cards []CardName) error {
 	}
 
 	// Verify the cards are valid (must be either in the player's hand or the dummy's hand and must be unique
-	state, errS := g.GetState(playerID)
-	if errS != nil {
-		return errS
-	}
+	state := g.GetState(playerID)
 	if !containsAllUnique(state.Cards, cards) {
 		return fmt.Errorf("invalid card selected")
 	}
@@ -543,10 +545,7 @@ func (g *Game) Play(id string, card CardName) error {
 	}
 
 	// Verify the card is valid
-	state, err := g.GetState(id)
-	if err != nil {
-		return err
-	}
+	state := g.GetState(id)
 	if !contains(state.Cards, card) {
 		return fmt.Errorf("invalid card selected")
 	}
@@ -592,7 +591,7 @@ func (g *Game) Play(id string, card CardName) error {
 		g.CurrentRound.CurrentHand.CurrentPlayerID = np.ID
 	} else {
 
-		err = g.completeHand()
+		err := g.completeHand()
 		if err != nil {
 			return err
 		}

@@ -66,11 +66,10 @@ func TestGame_Me(t *testing.T) {
 
 func TestGame_GetState(t *testing.T) {
 	tests := []struct {
-		name           string
-		game           Game
-		playerID       string
-		expectedState  State
-		expectingError bool
+		name          string
+		game          Game
+		playerID      string
+		expectedState State
 	}{
 		{
 			name:     "Player exists",
@@ -89,10 +88,18 @@ func TestGame_GetState(t *testing.T) {
 			},
 		},
 		{
-			name:           "Player does not exist",
-			game:           TwoPlayerGame(),
-			playerID:       "3",
-			expectingError: true,
+			name:     "Player does not exist so is a spectator",
+			game:     TwoPlayerGame(),
+			playerID: "3",
+			expectedState: State{
+				ID:           TwoPlayerGame().ID,
+				Revision:     TwoPlayerGame().Revision,
+				IamSpectator: true,
+				Status:       TwoPlayerGame().Status,
+				MaxCall:      0,
+				Players:      TwoPlayerGame().Players,
+				Round:        TwoPlayerGame().CurrentRound,
+			},
 		},
 		{
 			name:     "Game in Called state",
@@ -175,70 +182,63 @@ func TestGame_GetState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			state, err := test.game.GetState(test.playerID)
-			if test.expectingError {
-				if err == nil {
-					t.Errorf("expected an error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
-				if state.ID != test.expectedState.ID {
-					t.Errorf("expected game ID to be %s, got %s", test.expectedState.ID, state.ID)
-				}
-				if state.Revision != test.expectedState.Revision {
-					t.Errorf("expected game revision to be %d, got %d", test.expectedState.Revision, state.Revision)
-				}
-				if state.Status != test.expectedState.Status {
-					t.Errorf("expected game status to be %s, got %s", test.expectedState.Status, state.Status)
-				}
-				if state.Me.ID != test.expectedState.Me.ID {
-					t.Errorf("expected player ID to be %s, got %s", test.expectedState.Me.ID, state.Me.ID)
-				}
-				if state.Me.Seat != test.expectedState.Me.Seat {
-					t.Errorf("expected player seat to be %d, got %d", test.expectedState.Me.Seat, state.Me.Seat)
-				}
-				if !compare(state.Me.Cards, test.expectedState.Me.Cards) {
-					t.Errorf("expected player cards to be %v, got %v", test.expectedState.Me.Cards, state.Me.Cards)
-				}
-				if state.Me.Call != test.expectedState.Me.Call {
-					t.Errorf("expected player call to be %d, got %d", test.expectedState.Me.Call, state.Me.Call)
-				}
-				if state.Me.Score != test.expectedState.Me.Score {
-					t.Errorf("expected player score to be %d, got %d", test.expectedState.Me.Score, state.Me.Score)
-				}
-				if state.Me.Rings != test.expectedState.Me.Rings {
-					t.Errorf("expected player rings to be %d, got %d", test.expectedState.Me.Rings, state.Me.Rings)
-				}
-				if state.Me.TeamID != test.expectedState.Me.TeamID {
-					t.Errorf("expected player team ID to be %s, got %s", test.expectedState.Me.TeamID, state.Me.TeamID)
-				}
-				if state.Me.Winner != test.expectedState.Me.Winner {
-					t.Errorf("expected player winner to be %t, got %t", test.expectedState.Me.Winner, state.Me.Winner)
-				}
-				if state.IamDealer != test.expectedState.IamDealer {
-					t.Errorf("expected IamDealer to be %t, got %t", test.expectedState.IamDealer, state.IamDealer)
-				}
-				if state.IamGoer != test.expectedState.IamGoer {
-					t.Errorf("expected IamGoer to be %t, got %t", test.expectedState.IamGoer, state.IamGoer)
-				}
-				if state.IamSpectator != test.expectedState.IamSpectator {
-					t.Errorf("expected IamSpectator to be %t, got %t", test.expectedState.IamSpectator, state.IamSpectator)
-				}
-				if state.IsMyGo != test.expectedState.IsMyGo {
-					t.Errorf("expected IsMyGo to be %t, got %t", test.expectedState.IsMyGo, state.IsMyGo)
-				}
-				if state.MaxCall != test.expectedState.MaxCall {
-					t.Errorf("expected MaxCall to be %d, got %d", test.expectedState.MaxCall, state.MaxCall)
-				}
-				if state.Round.Number != test.expectedState.Round.Number {
-					t.Errorf("expected Round Number to be %d, got %d", test.expectedState.Round.Number, state.Round.Number)
-				}
-				if state.PrevRound.Number != test.expectedState.PrevRound.Number {
-					t.Errorf("expected PrevRound Number to be %d, got %d", test.expectedState.PrevRound.Number, state.PrevRound.Number)
-				}
+			state := test.game.GetState(test.playerID)
+
+			if state.ID != test.expectedState.ID {
+				t.Errorf("expected game ID to be %s, got %s", test.expectedState.ID, state.ID)
 			}
+			if state.Revision != test.expectedState.Revision {
+				t.Errorf("expected game revision to be %d, got %d", test.expectedState.Revision, state.Revision)
+			}
+			if state.Status != test.expectedState.Status {
+				t.Errorf("expected game status to be %s, got %s", test.expectedState.Status, state.Status)
+			}
+			if state.Me.ID != test.expectedState.Me.ID {
+				t.Errorf("expected player ID to be %s, got %s", test.expectedState.Me.ID, state.Me.ID)
+			}
+			if state.Me.Seat != test.expectedState.Me.Seat {
+				t.Errorf("expected player seat to be %d, got %d", test.expectedState.Me.Seat, state.Me.Seat)
+			}
+			if !compare(state.Me.Cards, test.expectedState.Me.Cards) {
+				t.Errorf("expected player cards to be %v, got %v", test.expectedState.Me.Cards, state.Me.Cards)
+			}
+			if state.Me.Call != test.expectedState.Me.Call {
+				t.Errorf("expected player call to be %d, got %d", test.expectedState.Me.Call, state.Me.Call)
+			}
+			if state.Me.Score != test.expectedState.Me.Score {
+				t.Errorf("expected player score to be %d, got %d", test.expectedState.Me.Score, state.Me.Score)
+			}
+			if state.Me.Rings != test.expectedState.Me.Rings {
+				t.Errorf("expected player rings to be %d, got %d", test.expectedState.Me.Rings, state.Me.Rings)
+			}
+			if state.Me.TeamID != test.expectedState.Me.TeamID {
+				t.Errorf("expected player team ID to be %s, got %s", test.expectedState.Me.TeamID, state.Me.TeamID)
+			}
+			if state.Me.Winner != test.expectedState.Me.Winner {
+				t.Errorf("expected player winner to be %t, got %t", test.expectedState.Me.Winner, state.Me.Winner)
+			}
+			if state.IamDealer != test.expectedState.IamDealer {
+				t.Errorf("expected IamDealer to be %t, got %t", test.expectedState.IamDealer, state.IamDealer)
+			}
+			if state.IamGoer != test.expectedState.IamGoer {
+				t.Errorf("expected IamGoer to be %t, got %t", test.expectedState.IamGoer, state.IamGoer)
+			}
+			if state.IamSpectator != test.expectedState.IamSpectator {
+				t.Errorf("expected IamSpectator to be %t, got %t", test.expectedState.IamSpectator, state.IamSpectator)
+			}
+			if state.IsMyGo != test.expectedState.IsMyGo {
+				t.Errorf("expected IsMyGo to be %t, got %t", test.expectedState.IsMyGo, state.IsMyGo)
+			}
+			if state.MaxCall != test.expectedState.MaxCall {
+				t.Errorf("expected MaxCall to be %d, got %d", test.expectedState.MaxCall, state.MaxCall)
+			}
+			if state.Round.Number != test.expectedState.Round.Number {
+				t.Errorf("expected Round Number to be %d, got %d", test.expectedState.Round.Number, state.Round.Number)
+			}
+			if state.PrevRound.Number != test.expectedState.PrevRound.Number {
+				t.Errorf("expected PrevRound Number to be %d, got %d", test.expectedState.PrevRound.Number, state.PrevRound.Number)
+			}
+
 		})
 	}
 }
@@ -1086,10 +1086,7 @@ func TestGame_SelectSuit(t *testing.T) {
 					t.Errorf("expected revision to be %d, got %d", test.expectedRevision, test.game.Revision)
 				}
 				// Check that he has all of retained the cards he selected
-				state, err := test.game.GetState(test.playerID)
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				state := test.game.GetState(test.playerID)
 				if !compare(state.Cards, test.cards) {
 					t.Errorf("expected player to have all of the selected cards %v, got %v", test.cards, state.Cards)
 				}
@@ -1210,10 +1207,7 @@ func TestGame_Buy(t *testing.T) {
 					t.Errorf("expected round status to be %s, got %s", test.expectedStatus, test.game.CurrentRound.Status)
 				}
 				// Check that he has all of retained the cards he selected
-				state, err := test.game.GetState(test.playerID)
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				state := test.game.GetState(test.playerID)
 				if len(state.Cards) != 5 {
 					t.Errorf("expected player to have 5 cards, got %d", len(state.Cards))
 				}
@@ -1311,10 +1305,7 @@ func TestGame_Play(t *testing.T) {
 					t.Errorf("expected next player to be %s, got %s", test.expectedNextPlayer, test.game.CurrentRound.CurrentHand.CurrentPlayerID)
 				}
 				// Check that he has all of retained the cards he selected
-				state, err := test.game.GetState(test.playerID)
-				if err != nil {
-					t.Errorf("expected no error, got %v", err)
-				}
+				state := test.game.GetState(test.playerID)
 				if contains(state.Cards, test.card) {
 					t.Errorf("expected player to not have played card %s, got %v", test.card, state.Cards)
 				}

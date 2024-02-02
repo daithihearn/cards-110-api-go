@@ -34,10 +34,7 @@ func getCacheKey(gameId string, playerId string) string {
 func (s *Service) updateStateCache(game Game) error {
 	// Update the state cache for all players in the game.
 	for _, player := range game.Players {
-		state, err := game.GetState(player.ID)
-		if err != nil {
-			return err
-		}
+		state := game.GetState(player.ID)
 		errC := s.Cache.Set(getCacheKey(game.ID, player.ID), state, time.Minute)
 		if errC != nil {
 			return errC
@@ -92,10 +89,7 @@ func (s *Service) GetState(ctx context.Context, gameId string, playerID string) 
 		return State{}, has, errG
 	}
 
-	state, err = game.GetState(playerID)
-	if err != nil {
-		return State{}, true, err
-	}
+	state = game.GetState(playerID)
 
 	// Update the state cache for all players in the game.
 	errC := s.updateStateCache(game)
