@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/game": {
+        "/game": {
             "put": {
                 "security": [
                     {
@@ -49,47 +49,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/game.Game"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/stats/gameStatsForPlayer": {
-            "get": {
-                "description": "Returns stats for a player",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Stats"
-                ],
-                "operationId": "get-stats-for-player",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Player ID",
-                        "name": "playerId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/game.PlayerStats"
                         }
                     },
                     "400": {
@@ -191,6 +150,297 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Deletes a game with the given ID",
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "delete-game",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/{gameId}/buy": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "When in the Buying state, the Goer can buy cards from the deck",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "buy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.State"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/{gameId}/call": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Makes a call for the current user in the game with the given ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "call",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Call",
+                        "name": "call",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.State"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/{gameId}/play": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "When in the Playing state, the current player can play a card",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "play",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Card",
+                        "name": "card",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.State"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/{gameId}/state": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Returns the state of a game with the given ID for the current user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "get-game-state",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Revision",
+                        "name": "revision",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.State"
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/{gameId}/suit": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "When in the Called state, the Goer can select the suit and what cards they want to keep from their hand and the dummy hand",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "operationId": "select-suit",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Game ID",
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/game.State"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/profile": {
@@ -208,6 +458,14 @@ const docTemplate = `{
                     "Profile"
                 ],
                 "operationId": "get-profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -291,26 +549,29 @@ const docTemplate = `{
                 }
             }
         },
-        "/profile/has": {
+        "/profile/all": {
             "get": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "Returns a boolean indicating if the user has a profile or not.",
+                "description": "Returns all profiles.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Profile"
                 ],
-                "operationId": "has-profile",
+                "operationId": "get-all-profiles",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "boolean"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/profile.Profile"
+                            }
                         }
                     },
                     "400": {
@@ -426,7 +687,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/stats/gameStatsForPlayer": {
+        "/stats": {
             "get": {
                 "security": [
                     {
@@ -445,7 +706,48 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/game.PlayerStats"
+                            "$ref": "#/definitions/stats.PlayerStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/{playerId}": {
+            "get": {
+                "description": "Returns stats for a player",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Stats"
+                ],
+                "operationId": "get-stats-for-player",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "playerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/stats.PlayerStats"
                         }
                     },
                     "400": {
@@ -473,22 +775,23 @@ const docTemplate = `{
                 }
             }
         },
-        "game.Card": {
-            "type": "object",
-            "properties": {
-                "coldValue": {
-                    "type": "integer"
-                },
-                "renegable": {
-                    "type": "boolean"
-                },
-                "suit": {
-                    "$ref": "#/definitions/game.Suit"
-                },
-                "value": {
-                    "type": "integer"
-                }
-            }
+        "game.Call": {
+            "type": "integer",
+            "enum": [
+                0
+            ],
+            "x-enum-varnames": [
+                "Pass"
+            ]
+        },
+        "game.CardName": {
+            "type": "string",
+            "enum": [
+                "EMPTY"
+            ],
+            "x-enum-varnames": [
+                "EMPTY_CARD"
+            ]
         },
         "game.CreateGameRequest": {
             "type": "object",
@@ -496,7 +799,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "playerIds": {
+                "players": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -510,15 +813,6 @@ const docTemplate = `{
                 "adminId": {
                     "type": "string"
                 },
-                "completedRounds": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/game.Round"
-                    }
-                },
-                "currentRound": {
-                    "$ref": "#/definitions/game.Round"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -531,10 +825,13 @@ const docTemplate = `{
                         "$ref": "#/definitions/game.Player"
                     }
                 },
+                "revision": {
+                    "type": "integer"
+                },
                 "status": {
                     "$ref": "#/definitions/game.Status"
                 },
-                "timeStamp": {
+                "timestamp": {
                     "type": "string"
                 }
             }
@@ -546,7 +843,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "leadOut": {
-                    "$ref": "#/definitions/game.Card"
+                    "$ref": "#/definitions/game.CardName"
                 },
                 "playedCards": {
                     "type": "array",
@@ -554,7 +851,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/game.PlayedCard"
                     }
                 },
-                "timeStamp": {
+                "timestamp": {
                     "type": "string"
                 }
             }
@@ -563,7 +860,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "card": {
-                    "$ref": "#/definitions/game.Card"
+                    "$ref": "#/definitions/game.CardName"
                 },
                 "playerId": {
                     "type": "string"
@@ -574,7 +871,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "call": {
-                    "type": "integer"
+                    "$ref": "#/definitions/game.Call"
                 },
                 "cardsBought": {
                     "type": "integer"
@@ -592,26 +889,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "teamId": {
-                    "type": "string"
-                },
-                "winner": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "game.PlayerStats": {
-            "type": "object",
-            "properties": {
-                "gameId": {
-                    "type": "string"
-                },
-                "rings": {
-                    "type": "integer"
-                },
-                "score": {
-                    "type": "integer"
-                },
-                "timeStamp": {
                     "type": "string"
                 },
                 "winner": {
@@ -649,19 +926,72 @@ const docTemplate = `{
                 "suit": {
                     "$ref": "#/definitions/game.Suit"
                 },
-                "timeStamp": {
+                "timestamp": {
                     "type": "string"
                 }
             }
         },
         "game.RoundStatus": {
-            "type": "integer",
+            "type": "string",
             "enum": [
-                0
+                "CALLING"
             ],
             "x-enum-varnames": [
-                "CALLING"
+                "Calling"
             ]
+        },
+        "game.State": {
+            "type": "object",
+            "properties": {
+                "cards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.CardName"
+                    }
+                },
+                "iamAdmin": {
+                    "type": "boolean"
+                },
+                "iamDealer": {
+                    "type": "boolean"
+                },
+                "iamGoer": {
+                    "type": "boolean"
+                },
+                "iamSpectator": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isMyGo": {
+                    "type": "boolean"
+                },
+                "maxCall": {
+                    "$ref": "#/definitions/game.Call"
+                },
+                "me": {
+                    "$ref": "#/definitions/game.Player"
+                },
+                "players": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/game.Player"
+                    }
+                },
+                "previousRound": {
+                    "$ref": "#/definitions/game.Round"
+                },
+                "revision": {
+                    "type": "integer"
+                },
+                "round": {
+                    "$ref": "#/definitions/game.Round"
+                },
+                "status": {
+                    "$ref": "#/definitions/game.Status"
+                }
+            }
         },
         "game.Status": {
             "type": "string",
@@ -669,7 +999,7 @@ const docTemplate = `{
                 "ACTIVE"
             ],
             "x-enum-varnames": [
-                "ACTIVE"
+                "Active"
             ]
         },
         "game.Suit": {
@@ -678,12 +1008,15 @@ const docTemplate = `{
                 "EMPTY"
             ],
             "x-enum-varnames": [
-                "EMPTY"
+                "Empty"
             ]
         },
         "profile.Profile": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "string"
+                },
                 "lastAccess": {
                     "type": "string"
                 },
@@ -719,6 +1052,26 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "autoBuyCards": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "stats.PlayerStats": {
+            "type": "object",
+            "properties": {
+                "gameId": {
+                    "type": "string"
+                },
+                "rings": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "winner": {
                     "type": "boolean"
                 }
             }
