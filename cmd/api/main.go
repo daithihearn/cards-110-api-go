@@ -19,6 +19,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -68,20 +69,31 @@ func main() {
 		dbName = "cards-110"
 	}
 
-	// Configure redis
-	redisUrl := os.Getenv("REDIS_URL")
-	if redisUrl == "" {
-		redisUrl = "localhost:6379"
+	// Get the Redis URL from the environment
+	redisUri := os.Getenv("REDIS_URL")
+	if redisUri == "" {
+		redisUri = "redis://:password@localhost:6379/0"
 	}
-	redisPassword := os.Getenv("REDIS_PASSWORD")
-	if redisPassword == "" {
-		redisPassword = "password"
+
+	// Parse the Redis URL
+	parsedUrl, err := url.Parse(redisUri)
+	if err != nil {
+		log.Fatalf("Failed to parse Redis URL: %v", err)
 	}
+
+	// Extract the password from the URL
+	redisPassword, _ := parsedUrl.User.Password()
+
+	// Extract the address from the URL
+	redisAddr := parsedUrl.Host
+
+	// Configure the Redis client
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     redisUrl, // use your Redis Address
+		Addr:     redisAddr,
 		Password: redisPassword,
 		DB:       0, // use default DB
 	})
+
 	gameCache := cache.NewRedisCache[game.State](rdb, ctx)
 	statsCache := cache.NewRedisCache[[]stats.PlayerStats](rdb, ctx)
 
